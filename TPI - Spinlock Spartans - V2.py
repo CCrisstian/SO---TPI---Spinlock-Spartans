@@ -120,7 +120,7 @@ def main():
 
     # --- PANTALLA 2: Procesos Leídos ---
     
-    # 2a. Leer el archivo CSV
+    # Leer el archivo CSV
     archivo_CSV = r"C:\Users\criss\Downloads\procesos.csv"
     try:
         df_procesos = pd.read_csv(archivo_CSV)
@@ -131,7 +131,7 @@ def main():
         console.print(f"\n[bold red]¡ERROR![/bold red] Ocurrió un error inesperado al leer el archivo: {e}")
         sys.exit()
     
-    # 2b. Mostrar la Tabla de todos los Procesos
+    # Mostrar la Tabla de todos los Procesos
     tabla_todos = crear_tabla_procesos_df(df_procesos, "Procesos leídos del Archivo CSV", "bold blue")
     console.print(tabla_todos)
 
@@ -140,44 +140,43 @@ def main():
 
     # --- PANTALLA 3: Filtrado y Resultados ---
 
-    # 3a. Mensaje de filtrado
+    # Mensaje de filtrado
     console.print(f"\n[bold yellow]Realizando Filtrado de Procesos (Memoria Máxima = {MAX_MEMORIA}K)...[/bold yellow]")
     time.sleep(1.5)
     
-    # 3b. Lógica de Filtrado
-    df_admitidos = df_procesos[df_procesos['Tamaño'] <= MAX_MEMORIA].copy()
+    # Lógica de Filtrado
+    df_aceptados = df_procesos[df_procesos['Tamaño'] <= MAX_MEMORIA].copy()
     df_descartados = df_procesos[df_procesos['Tamaño'] > MAX_MEMORIA].copy()
     
-    # 3c. Mostrar resultados
+    # Mostrar resultados
     if df_descartados.empty:
         console.print(f"\n[bold green]Procesos validados. Todos los procesos han sido admitidos.[/bold green]")
-        tabla_admitidos = crear_tabla_procesos_df(df_admitidos, "Procesos Admitidos", "bold green")
+        tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "Procesos Admitidos", "bold green")
         console.print(tabla_admitidos)
     else:
         msg = f"Los siguientes {len(df_descartados)} proceso(s) fueron rechazados porque superan el tamaño máximo de {MAX_MEMORIA}K."
         console.print(f"\n[bold red]¡Atención![/bold red] {msg}\n")
         
-        tabla_admitidos = crear_tabla_procesos_df(df_admitidos, "Procesos Admitidos", "bold green")
+        tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "Procesos Aceptadps", "bold green")
         tabla_rechazados = crear_tabla_procesos_df(df_descartados, "Procesos Rechazados", "bold red")
 
         console.print(Columns([tabla_admitidos, tabla_rechazados], expand=True))
 
     # --- TRANSICIÓN 3: Ordenamiento ---
-    if not df_admitidos.empty:
+    if not df_aceptados.empty:
         pausar_y_limpiar("Presiona Enter para crear la 'Cola de Trabajo' ordenada...")
         
         # --- PANTALLA 4: Cola de Trabajo ---
         
-        # 4a. Mensaje
         console.print(f"\n[bold yellow]Ordenando procesos por 'Tiempo de Arribo' (TA) y creando 'Cola de Trabajo'...[/bold yellow]")
         time.sleep(1.5)
         
-        # 4b. Lógica de Ordenamiento
-        df_admitidos_ordenados = df_admitidos.sort_values(by='Arribo').copy()
+        # Lógica de Ordenamiento
+        df_aceptados_ordenados = df_aceptados.sort_values(by='Arribo').copy()
         
-        # 4c. Creación de la colaDeTrabajo
+        # Creación de la colaDeTrabajo
         colaDeTrabajo: List[Proceso] = []
-        for index, row in df_admitidos_ordenados.iterrows():
+        for index, row in df_aceptados_ordenados.iterrows():
             proc = Proceso(
                 idProceso=row['ID'],
                 tamProceso=row['Tamaño'],
@@ -186,7 +185,7 @@ def main():
             )
             colaDeTrabajo.append(proc)
         
-        # 4d.Mostrar la nueva tabla
+        # Mostrar la nueva tabla
         mostrar_cola_de_trabajo(colaDeTrabajo)
         
         console.print(f"\n[bold green]¡Listo![/bold green] La 'Cola de Trabajo' está preparada.")
