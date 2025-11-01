@@ -48,6 +48,9 @@ class Proceso:
 # --- 3. Funciones de Creación de Tablas ---
 
 def crear_tabla_procesos_df(df_procs, titulo_tabla, estilo_header):
+    """
+    Toma un DataFrame de PANDAS y devuelve un objeto Table de rich.
+    """
     tabla = Table(
         title=titulo_tabla,
         box=box.ROUNDED,
@@ -55,8 +58,11 @@ def crear_tabla_procesos_df(df_procs, titulo_tabla, estilo_header):
         header_style=estilo_header
     )
     
-    for columna in df_procs.columns:
-        tabla.add_column(columna, justify="center")
+    # Añadimos las columnas explícitamente
+    tabla.add_column("ID", justify="center")
+    tabla.add_column("Tamaño", justify="center")
+    tabla.add_column("Arribo", justify="center")
+    tabla.add_column("Irrupcion", justify="center")
 
     for index, row in df_procs.iterrows():
         tabla.add_row(
@@ -92,7 +98,41 @@ def mostrar_cola_de_trabajo(cola_de_trabajo: List[Proceso]):
         )
     
     console.print(tabla)
+
+def crear_tabla_rechazados_df(df_procs, titulo_tabla, estilo_header):
+    """
+    Toma un DataFrame de PANDAS de procesos rechazados y
+    muestra una tabla incluyendo la Razón del rechazo.
+    """
+    tabla = Table(
+        title=titulo_tabla,
+        box=box.ROUNDED,
+        show_header=True,
+        header_style=estilo_header
+    )
     
+    # Añadimos columnas, incluyendo la Razón
+    tabla.add_column("ID", justify="center")
+    tabla.add_column("Tamaño", justify="center")
+    tabla.add_column("Arribo", justify="center")
+    tabla.add_column("Irrupción", justify="center")
+    tabla.add_column("Razón de Rechazo", justify="left", style="yellow")
+
+    for index, row in df_procs.iterrows():
+        id_str = str(row.get('ID', 'N/A'))
+        tam_str = str(row.get('Tamaño', 'N/A'))
+        arr_str = str(row.get('Arribo', 'N/A'))
+        irr_str = str(row.get('Irrupcion', 'N/A'))
+        
+        tabla.add_row(
+            id_str,
+            f"{tam_str}K" if pd.notnull(row.get('Tamaño')) else tam_str,
+            arr_str,
+            irr_str,
+            str(row['Rechazo_Razon'])
+        )
+    return tabla
+   
 # --- FUNCIÓN PRINCIPAL ---
 def main():
     # --- PANTALLA 1: Presentación ---
@@ -138,28 +178,65 @@ def main():
     # --- TRANSICIÓN 2 ---
     pausar_y_limpiar("Presiona Enter para Filtrar los Procesos...")
 
-    # --- PANTALLA 3: Filtrado y Resultados ---
+   # --- PANTALLA 3: Filtrado y Resultados ---
 
     # Mensaje de filtrado
-    console.print(f"\n[bold yellow]Realizando Filtrado de Procesos (Memoria Máxima = {MAX_MEMORIA}K)...[/bold yellow]")
+    console.print(f"\n[bold yellow]Realizando Filtrado y Validación de Procesos[/bold yellow]")
     time.sleep(1.5)
     
-    # Lógica de Filtrado
-    df_aceptados = df_procesos[df_procesos['Tamaño'] <= MAX_MEMORIA].copy()
-    df_descartados = df_procesos[df_procesos['Tamaño'] > MAX_MEMORIA].copy()
+    # --- Lógica de Validación y Filtrado ---
     
-    # Mostrar resultados
+    # Columnas que deben ser números
+    numeric_cols = ['Tamaño', 'Arribo', 'Irrupcion']
+    
+    df_validado = df_procesos.copy()
+    
+    # Creamos la nueva columna para la razón del rechazo
+    df_validado['Rechazo_Razon'] = ''
+
+    # --- Rechazar campos vacíos (ID) ---
+    mask_id_vacio = df_validado['ID'].isnull()
+    df_validado.loc[mask_id_vacio, 'Rechazo_Razon'] = 'ID vacío'
+
+    # --- Rechazar campos vacíos o no numéricos (Tamaño, Arribo, Irrupcion) ---
+    for col in numeric_cols:
+        df_validado[col] = pd.to_numeric(df_validado[col], errors='coerce')
+    
+    # Ahora, 'NaN' significa que el campo estaba vacío O que no era un número
+    mask_nan = df_validado[numeric_cols].isnull().any(axis=1)
+    df_validado.loc[mask_nan & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'Campo vacío o no numérico'
+
+    # --- Rechazar valores no positivos ---
+    # Tamaño e Irrupción deben ser > 0
+    mask_no_positivo = (df_validado['Tamaño'] <= 0) | (df_validado['Irrupcion'] <= 0) | (df_validado['Arribo'] < 0)
+    df_validado.loc[mask_no_positivo & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'Valor no positivo (<= 0)'
+
+    # --- Rechazar por MAX_MEMORIA ---
+    mask_memoria = df_validado['Tamaño'] > MAX_MEMORIA
+    df_validado.loc[mask_memoria & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = f'Excede Memoria Máx. ({MAX_MEMORIA}K)'
+
+    df_aceptados = df_validado[df_validado['Rechazo_Razon'] == ''].copy()
+    df_descartados = df_validado[df_validado['Rechazo_Razon'] != ''].copy()
+
+    for col in numeric_cols:
+        df_aceptados[col] = df_aceptados[col].astype('Int64')
+
+    # --- Mostrar resultados ---
     if df_descartados.empty:
-        console.print(f"\n[bold green]Procesos validados. Todos los procesos han sido admitidos.[/bold green]")
-        tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "Procesos Admitidos", "bold green")
+        console.print(f"\n[bold green]Procesos validados. Todos los procesos han sido Aceptados.[/bold green]")
+        tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "Procesos Aceptados", "bold green")
         console.print(tabla_admitidos)
     else:
-        msg = f"Los siguientes {len(df_descartados)} proceso(s) fueron rechazados porque superan el tamaño máximo de {MAX_MEMORIA}K."
+        msg = f"Se rechazaron {len(df_descartados)} proceso(s) por errores en los datos."
         console.print(f"\n[bold red]¡Atención![/bold red] {msg}\n")
         
-        tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "Procesos Aceptadps", "bold green")
-        tabla_rechazados = crear_tabla_procesos_df(df_descartados, "Procesos Rechazados", "bold red")
+        # Tabla de Admitidos
+        tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "Procesos Aceptados", "bold green")
+        
+        # Tabla de Rechazados
+        tabla_rechazados = crear_tabla_rechazados_df(df_descartados, "Procesos Rechazados", "bold red")
 
+        # Mostrar tablas lado a lado
         console.print(Columns([tabla_admitidos, tabla_rechazados], expand=True))
 
     # --- TRANSICIÓN 3: Ordenamiento ---
@@ -197,7 +274,6 @@ def main():
     console.print("\n[bold green]Simulación de carga finalizada.[/bold green]")
     console.print("[dim]El siguiente paso sería iniciar el bucle principal del simulador (tiempo T).[/dim]")
     input("\nPresiona Enter para salir.")
-
 
 if __name__ == "__main__":
     main()
