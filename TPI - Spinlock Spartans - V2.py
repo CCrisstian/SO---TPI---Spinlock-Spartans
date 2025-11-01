@@ -44,13 +44,9 @@ class Proceso:
         return (f"Proceso(ID={self.idProceso}, Tam={self.tamProceso}K, "
                 f"Estado='{self.estado}', TA={self.TA}, TI={self.TI})")
 
-
 # --- 3. Funciones de Creación de Tablas ---
 
 def crear_tabla_procesos_df(df_procs, titulo_tabla, estilo_header):
-    """
-    Toma un DataFrame de PANDAS y devuelve un objeto Table de rich.
-    """
     tabla = Table(
         title=titulo_tabla,
         box=box.ROUNDED,
@@ -100,10 +96,7 @@ def mostrar_cola_de_trabajo(cola_de_trabajo: List[Proceso]):
     console.print(tabla)
 
 def crear_tabla_rechazados_df(df_procs, titulo_tabla, estilo_header):
-    """
-    Toma un DataFrame de PANDAS de procesos rechazados y
-    muestra una tabla incluyendo la Razón del rechazo.
-    """
+
     tabla = Table(
         title=titulo_tabla,
         box=box.ROUNDED,
@@ -161,7 +154,7 @@ def main():
     # --- PANTALLA 2: Procesos Leídos ---
     
     # Leer el archivo CSV
-    archivo_CSV = r"C:\Users\criss\Downloads\procesos.csv"
+    archivo_CSV = r"\Users\criss\Desktop\SO - Spinlock Spartans\procesos.csv"
     try:
         df_procesos = pd.read_csv(archivo_CSV)
     except FileNotFoundError:
