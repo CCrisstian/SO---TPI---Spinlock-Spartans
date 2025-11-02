@@ -8,11 +8,13 @@ from rich.panel import Panel
 from rich import box
 from rich.text import Text
 from rich.columns import Columns
+from rich.rule import Rule
 from typing import List
 
 # --- 0. Configuración inicial ---
 console = Console()
 MAX_MEMORIA = 250 # Límite de memoria
+GRADO_MAX_MULTIPROGRAMACION = 5 # Límite de procesos en el sistema
 
 # --- 1. Funciones de Transición ---
 
@@ -31,6 +33,7 @@ def pausar_y_limpiar(mensaje="Presiona Enter para continuar..."):
 
 
 # --- 2. Definición de Clases ---
+
 class Proceso:
     # El estado se inicializa como "Nuevo"
     def __init__(self, idProceso, tamProceso, TA, TI, estado="Nuevo"):
@@ -44,17 +47,29 @@ class Proceso:
         return (f"Proceso(ID={self.idProceso}, Tam={self.tamProceso}K, "
                 f"Estado='{self.estado}', TA={self.TA}, TI={self.TI})")
 
+class Particion:
+    def __init__(self, id_part: str, dir_inicio: int, tamano: int, id_proceso: str | int = None, fragmentacion: int = 0):
+        self.id_part = id_part           # "SO", "Grandes", "Medianos", "Pequeños"
+        self.dir_inicio = dir_inicio     # 0, 100, 350, 500
+        self.tamano = tamano             # 100, 250, 150, 50
+        self.id_proceso = id_proceso     # None si está libre, o el ID del proceso
+        self.fragmentacion = fragmentacion # tamano - tamProceso
+    
+    def __repr__(self):
+        return (f"Particion(ID='{self.id_part}', Inicio={self.dir_inicio}, "
+                f"Tam={self.tamano}K, ProcID={self.id_proceso})")
+    
+
 # --- 3. Funciones de Creación de Tablas ---
 
 def crear_tabla_procesos_df(df_procs, titulo_tabla, estilo_header):
+    """Toma un DataFrame de PANDAS y devuelve un objeto Table de rich."""
     tabla = Table(
         title=titulo_tabla,
         box=box.ROUNDED,
         show_header=True,
         header_style=estilo_header
     )
-    
-    # Añadimos las columnas explícitamente
     tabla.add_column("ID", justify="center")
     tabla.add_column("Tamaño", justify="center")
     tabla.add_column("Arribo", justify="center")
@@ -69,42 +84,14 @@ def crear_tabla_procesos_df(df_procs, titulo_tabla, estilo_header):
         )
     return tabla
 
-def mostrar_cola_de_trabajo(cola_de_trabajo: List[Proceso]):
-    tabla = Table(
-        title="Cola de Trabajo",
-        box=box.ROUNDED,
-        show_header=True,
-        header_style="bold cyan"
-    )
-
-    tabla.add_column("ID", justify="center")
-    tabla.add_column("Tamaño", justify="center")
-    tabla.add_column("Arribo", justify="center")
-    tabla.add_column("Irrupción", justify="center")
-    tabla.add_column("Estado", justify="center", style="yellow")
-
-    # Iteramos sobre la lista de OBJETOS Proceso
-    for proc in cola_de_trabajo:
-        tabla.add_row(
-            str(proc.idProceso),
-            f"{proc.tamProceso}K",
-            str(proc.TA),
-            str(proc.TI),
-            proc.estado
-        )
-    
-    console.print(tabla)
-
 def crear_tabla_rechazados_df(df_procs, titulo_tabla, estilo_header):
-
+    """Toma un DataFrame de PANDAS de procesos rechazados y muestra la Razón."""
     tabla = Table(
         title=titulo_tabla,
         box=box.ROUNDED,
         show_header=True,
         header_style=estilo_header
     )
-    
-    # Añadimos columnas, incluyendo la Razón
     tabla.add_column("ID", justify="center")
     tabla.add_column("Tamaño", justify="center")
     tabla.add_column("Arribo", justify="center")
@@ -125,7 +112,68 @@ def crear_tabla_rechazados_df(df_procs, titulo_tabla, estilo_header):
             str(row['Rechazo_Razon'])
         )
     return tabla
-   
+
+def crear_tabla_procesos(
+    lista_procesos: List[Proceso], 
+    titulo: str, 
+    estilo_header: str, 
+    estilo_estado: str = "yellow"
+) -> Table:
+    
+    tabla = Table(
+        title=titulo,
+        box=box.ROUNDED,
+        show_header=True,
+        header_style=estilo_header
+    )
+    tabla.add_column("ID", justify="center")
+    tabla.add_column("Tamaño", justify="center")
+    tabla.add_column("Arribo", justify="center")
+    tabla.add_column("Irrupción", justify="center")
+    tabla.add_column("Estado", justify="center", style=estilo_estado)
+
+    if not lista_procesos:
+        tabla.add_row("[dim]Vacía...[/dim]", "-", "-", "-", "-")
+    else:
+        for proc in lista_procesos:
+            tabla.add_row(
+                str(proc.idProceso),
+                f"{proc.tamProceso}K",
+                str(proc.TA),
+                str(proc.TI),
+                proc.estado
+            )
+    return tabla
+
+def crear_tabla_particiones(particiones: List[Particion]) -> Table:
+    """Crea la tabla para la Tabla de Particiones de Memoria."""
+    tabla = Table(
+        title="Tabla de Particiones de Memoria",
+        box=box.ROUNDED,
+        show_header=True,
+        header_style="bold cyan"
+    )
+    tabla.add_column("ID Partición", justify="left")
+    tabla.add_column("Dir. Inicio", justify="center")
+    tabla.add_column("Tamaño", justify="center")
+    tabla.add_column("ID Proceso", justify="center")
+    tabla.add_column("Frag. Interna", justify="center")
+
+    for p in particiones:
+        estilo = "on grey30" if p.id_part == "SO" else ""
+        id_proc_str = str(p.id_proceso) if p.id_proceso is not None else "[dim]Libre[/dim]"
+        frag_str = f"{p.fragmentacion}K" if p.fragmentacion > 0 else "0K"
+        
+        tabla.add_row(
+            p.id_part,
+            str(p.dir_inicio),
+            f"{p.tamano}K",
+            id_proc_str,
+            frag_str,
+            style=estilo
+        )
+    return tabla
+
 # --- FUNCIÓN PRINCIPAL ---
 def main():
     # --- PANTALLA 1: Presentación ---
@@ -223,12 +271,12 @@ def main():
         msg = f"Se rechazaron {len(df_descartados)} proceso(s) por errores en los datos."
         console.print(f"\n[bold red]¡Atención![/bold red] {msg}\n")
         
-        # Tabla de Admitidos
+        # Tabla de Admitidos (usa la función de DataFrame)
         tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "Procesos Aceptados", "bold green")
-        
-        # Tabla de Rechazados
-        tabla_rechazados = crear_tabla_rechazados_df(df_descartados, "Procesos Rechazados", "bold red")
 
+        # Tabla de Rechazados (usa la función de DataFrame de Rechazados)
+        tabla_rechazados = crear_tabla_rechazados_df(df_descartados, "Procesos Rechazados", "bold red")
+        
         # Mostrar tablas lado a lado
         console.print(Columns([tabla_admitidos, tabla_rechazados], expand=True))
 
@@ -255,17 +303,138 @@ def main():
             )
             colaDeTrabajo.append(proc)
         
-        # Mostrar la nueva tabla
-        mostrar_cola_de_trabajo(colaDeTrabajo)
+        # Mostrar Cola de Trabajo
+        tabla_ct_completa = crear_tabla_procesos(
+            colaDeTrabajo, 
+            "Cola de Trabajo",
+            "bold cyan",
+            "yellow"
+        )
+        console.print(tabla_ct_completa)
         
         console.print(f"\n[bold green]¡Listo![/bold green] La 'Cola de Trabajo' está preparada.")
     else:
         # Si no hay procesos admitidos, no hay nada que ordenar
         console.print("\n\n[bold yellow]No hay procesos admitidos para la simulación.[/bold yellow]")
+        input("\nPresiona Enter para salir.")
+        sys.exit()
 
-    # --- Fin de la fase de carga ---
-    console.print("\n[bold green]Simulación de carga finalizada.[/bold green]")
-    console.print("[dim]El siguiente paso sería iniciar el bucle principal del simulador (tiempo T).[/dim]")
+    # --- FIN DE LA FASE DE CARGA ---
+    
+    pausar_y_limpiar("Presiona Enter para INICIAR LA SIMULACIÓN (T=0)...")
+
+    # --- PANTALLA 5: BUCLE PRINCIPAL DE SIMULACIÓN (v7 - Lógica primero) ---
+    
+    # --- Inicialización de variables de simulación ---
+    T = 0 # Variable global de Tiempo
+    cola_listos_suspendidos: List[Proceso] = []
+    cola_listos: List[Proceso] = []
+    procesos_en_simulador_count = 0 
+    
+    tabla_particiones: List[Particion] = [
+        Particion(id_part="SO", dir_inicio=0, tamano=100, id_proceso="SO"),
+        Particion(id_part="Grandes", dir_inicio=100, tamano=250),
+        Particion(id_part="Medianos", dir_inicio=350, tamano=150),
+        Particion(id_part="Pequeños", dir_inicio=500, tamano=50)
+    ]
+    
+    # --- Inicio del Bucle Principal ---
+    while True:
+        # --- LÓGICA DE EVENTOS PRIMERO ---
+        # Guardaremos los mensajes de eventos en esta lista para mostrarlos después
+        eventos_T = []
+        go_to_best_fit = False
+        
+        procesos_llegados_en_T = [p for p in colaDeTrabajo if p.TA <= T]
+        
+        if not procesos_llegados_en_T:
+            # --- NO (No hay arribos) ---
+            if procesos_en_simulador_count == 0:
+                eventos_T.append("[dim]Sistema vacío, esperando arribos...[/dim]")
+            else:
+                eventos_T.append("[bold magenta]... (No hay nuevos arribos. Se pasa al Módulo Best-Fit) ...[/bold magenta]")
+                go_to_best_fit = True
+        else:
+            # --- SI (Hay arribos) ---
+            for proceso_llegado in procesos_llegados_en_T:
+                if procesos_en_simulador_count < GRADO_MAX_MULTIPROGRAMACION:
+                    eventos_T.append(f"[green]Llega Proceso [bold]{proceso_llegado.idProceso}[/bold] (TA = {proceso_llegado.TA}).[/green] Pasa a 'Listos/Suspendidos'.")
+                    proceso_llegado.estado = "Listo y Suspendido"
+                    cola_listos_suspendidos.append(proceso_llegado)
+                    colaDeTrabajo.remove(proceso_llegado) # Sacar de Cola de trabajo
+                    procesos_en_simulador_count += 1  # Ingresa un Proceso al Simulador
+                    
+                    eventos_T.append(f"[dim]Procesos en sistema: {procesos_en_simulador_count}/{GRADO_MAX_MULTIPROGRAMACION}[/dim]")
+                else:
+                    eventos_T.append(f"[yellow]Llega Proceso [bold]{proceso_llegado.idProceso}[/bold], pero se llego al máximo de Multi-Programación.[/yellow].")
+                    go_to_best_fit = True
+                    break
+
+        # --- SALIDAS POR PANTALLA ---        
+        
+        limpiar_pantalla()
+        
+        # Título
+        console.print(f"[bold white on blue] Instante de Tiempo T = {T} [/bold white on blue]", justify="center")
+
+        # Cola de Trabajo 
+        tabla_ct_render = crear_tabla_procesos(
+            colaDeTrabajo,
+            "Cola de Trabajo",
+            "bold cyan",
+            "yellow"
+        )
+        console.print(tabla_ct_render)
+        console.print() # Salto de línea
+
+        # Separador "Simulador"
+        console.print(Rule("Simulador"))
+        
+        # Mostramos los mensajes guardados
+        for evento in eventos_T:
+            console.print(evento)
+        
+        console.print() # Salto de línea
+
+        # Tablas
+        tabla_cls_render = crear_tabla_procesos(
+            cola_listos_suspendidos,
+            "Cola de Listos/Suspendidos",
+            "bold yellow",
+            "yellow"
+        )
+
+        tabla_tp_render = crear_tabla_particiones(tabla_particiones)
+
+        tabla_cl_render = crear_tabla_procesos(
+            cola_listos,
+            "Cola de Listos",
+            "bold green",
+            "green"
+        )
+
+        console.print(Columns([tabla_cls_render, tabla_tp_render], expand=True))
+        console.print(tabla_cl_render)
+
+        # --- Condición de Fin del Bucle (Provisional) ---
+        if go_to_best_fit:
+            console.print("\n[bold magenta]... Siguiente paso Módulo Best-Fit ...[/bold magenta]")
+            break
+
+        if not colaDeTrabajo and procesos_en_simulador_count == 0:
+            console.print("\n[bold green]... (Todos los procesos han sido procesados) ...[/bold green]")
+            break
+
+        # --- Pausa para avanzar T ---
+        try:
+            input(f"\nPresione Enter para avanzar a T = {T+1}...")
+        except KeyboardInterrupt:
+            console.print("\n[red]Simulación interrumpida por el usuario.[/red]")
+            sys.exit()
+            
+        T += 1
+
+    # --- Fin de la simulación ---
     input("\nPresiona Enter para salir.")
 
 if __name__ == "__main__":
