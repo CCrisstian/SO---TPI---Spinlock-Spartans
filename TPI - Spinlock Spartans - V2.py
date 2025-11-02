@@ -146,7 +146,6 @@ def crear_tabla_procesos(
     return tabla
 
 def crear_tabla_particiones(particiones: List[Particion]) -> Table:
-    """Crea la tabla para la Tabla de Particiones de Memoria."""
     tabla = Table(
         title="Tabla de Particiones de Memoria",
         box=box.ROUNDED,
@@ -250,7 +249,7 @@ def main():
     # --- Rechazar valores no positivos ---
     # Tamaño e Irrupción deben ser > 0
     mask_no_positivo = (df_validado['Tamaño'] <= 0) | (df_validado['Irrupcion'] <= 0) | (df_validado['Arribo'] < 0)
-    df_validado.loc[mask_no_positivo & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'Valor no positivo (<= 0)'
+    df_validado.loc[mask_no_positivo & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'Valor negativo'
 
     # --- Rechazar por MAX_MEMORIA ---
     mask_memoria = df_validado['Tamaño'] > MAX_MEMORIA
@@ -321,7 +320,7 @@ def main():
 
     # --- FIN DE LA FASE DE CARGA ---
     
-    pausar_y_limpiar("Presiona Enter para INICIAR LA SIMULACIÓN (T=0)...")
+    pausar_y_limpiar("Presiona Enter para INICIAR LA SIMULACIÓN (T = 0)...")
 
     # --- PANTALLA 5: BUCLE PRINCIPAL DE SIMULACIÓN (v7 - Lógica primero) ---
     
@@ -352,8 +351,13 @@ def main():
             if procesos_en_simulador_count == 0:
                 eventos_T.append("[dim]Sistema vacío, esperando arribos...[/dim]")
             else:
-                eventos_T.append("[bold magenta]... (No hay nuevos arribos. Se pasa al Módulo Best-Fit) ...[/bold magenta]")
-                go_to_best_fit = True
+                #--- Condicion provisional para respetar MULTIPROGRAMACION ---
+                if procesos_en_simulador_count == GRADO_MAX_MULTIPROGRAMACION:
+                    eventos_T.append(f"[yellow]Se llego al máximo de Multi-Programación.[/yellow].")
+                    go_to_best_fit = True
+                    break
+                else:
+                    eventos_T.append("[bold magenta]No hay nuevos arribos en este instante. Esperando..[/bold magenta]")
         else:
             # --- SI (Hay arribos) ---
             for proceso_llegado in procesos_llegados_en_T:
@@ -366,7 +370,7 @@ def main():
                     
                     eventos_T.append(f"[dim]Procesos en sistema: {procesos_en_simulador_count}/{GRADO_MAX_MULTIPROGRAMACION}[/dim]")
                 else:
-                    eventos_T.append(f"[yellow]Llega Proceso [bold]{proceso_llegado.idProceso}[/bold], pero se llego al máximo de Multi-Programación.[/yellow].")
+                    eventos_T.append(f"[yellow]Llega Proceso [bold]{proceso_llegado.idProceso}[/bold], no puede ingresar porque se llegó al máximo de Multi-Programación.[/yellow].")
                     go_to_best_fit = True
                     break
 
