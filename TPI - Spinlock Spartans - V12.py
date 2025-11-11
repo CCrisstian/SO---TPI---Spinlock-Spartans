@@ -281,7 +281,7 @@ def procesar_finalizaciones_y_promociones(
                 particion_liberada.id_proceso = mejor_candidato_ls.idProceso        # Asignar la partición libre
                 particion_liberada.fragmentacion = particion_liberada.tamano - mejor_candidato_ls.tamProceso    #Calculo de fragmentacion de particion de memoria
                 eventos.append(
-                    f"[cyan]Promoción (Listos/Suspendidos -> Listos):[/cyan] Proceso (SRTF) [bold]{mejor_candidato_ls.idProceso}[/bold] "
+                    f"[cyan]Promoción (Listos/Suspendidos -> Listos):[/cyan] [bold]Proceso {mejor_candidato_ls.idProceso}[/bold] "
                     f"movido a 'Cola de Listos' y asignado a partición [bold]{particion_liberada.id_part}[/bold]."
                 )            
     return eventos, gdm_liberado
@@ -309,7 +309,7 @@ def procesar_arribos(
                 
                 if idx_particion != -1:
                     particion_asignada = particiones[idx_particion]
-                    eventos.append(f"[green]Arribo (Memoria OK):[/green] Proceso [bold]{proceso_llegado.idProceso}[/bold]. Asignado a [bold]{particion_asignada.id_part}[/bold].")
+                    eventos.append(f"[green]Arribo:[/green] Proceso [bold]{proceso_llegado.idProceso}[/bold]. Asignado a [bold]{particion_asignada.id_part}[/bold].")
                     proceso_llegado.estado = "Listo"
                     cola_l.append(proceso_llegado)
                     colaDeTrabajo.remove(proceso_llegado)
@@ -467,7 +467,7 @@ def main():     # --- FUNCIÓN PRINCIPAL ---
         console.print(f"\n[bold red]¡ERROR![/bold red] Ocurrió un error inesperado al leer el archivo: {e}")
         sys.exit()
     
-    tabla_todos = crear_tabla_procesos_df(df_procesos, "Procesos leídos del Archivo CSV", "bold blue")
+    tabla_todos = crear_tabla_procesos_df(df_procesos, "\nProcesos leídos del Archivo CSV", "bold blue")
     console.print(tabla_todos)
     pausar_y_limpiar("Presiona Enter para Filtrar los Procesos...")
 
@@ -517,7 +517,7 @@ def main():     # --- FUNCIÓN PRINCIPAL ---
 
     # --- Mostrar resultados ---
     if df_descartados.empty:
-        console.print(f"\n[bold green]Procesos validados. Todos los procesos han sido Aceptados.[/bold green]")
+        console.print(f"\n[bold green]Procesos validados. Todos los procesos han sido Aceptados.[/bold green]\n")
         tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "Procesos Aceptados", "bold green")
         console.print(tabla_admitidos)
     else:
