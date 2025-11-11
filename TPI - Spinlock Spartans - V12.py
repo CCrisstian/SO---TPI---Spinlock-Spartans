@@ -11,23 +11,21 @@ from rich.columns import Columns
 from rich.rule import Rule
 from typing import List, Tuple
 
-# --- 0. Configuración inicial ---
+#DEFINICIONES INICIALES
 console = Console()
 MAX_MEMORIA = 250 # Límite de memoria
 GRADO_MAX_MULTIPROGRAMACION = 5 # Límite de procesos en el sistema
 
-# --- 1. Funciones de Transición ---
-
+#FUNCIONES DE TRANSICION
 def limpiar_pantalla():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def pausar_y_limpiar(mensaje="Presiona Enter para continuar..."):
-    console.print(f"\n[dim italic]{mensaje}[/dim italic]")
-    input() # Espera que el usuario presione Enter
+def pausar_y_limpiar(mensaje=str):
+    console.print(f"\n[italic]{mensaje}[/italic]")
+    input()
     limpiar_pantalla()
 
-# --- 2. Definición de Clases ---
-
+#DEFINICIONES DE CLASES
 class Proceso:
     def __init__(self, idProceso, tamProceso, TA, TI, estado="Nuevo"):
       self.idProceso = idProceso
@@ -37,7 +35,7 @@ class Proceso:
       self.TI = TI
     
     def __repr__(self):
-        return (f"Proceso(ID={self.idProceso}, Tam={self.tamProceso}K, "
+        return (f"Proceso (ID={self.idProceso}, Tam={self.tamProceso}K, "
                 f"Estado='{self.estado}', TA={self.TA}, TI={self.TI})")
 
 class Particion:
@@ -49,7 +47,7 @@ class Particion:
       self.fragmentacion = fragmentacion
     
     def __repr__(self):
-        return (f"Particion(ID='{self.id_part}', Inicio={self.dir_inicio}, "
+        return (f"Particion (ID='{self.id_part}', Inicio={self.dir_inicio}, "
                 f"Tam={self.tamano}K, ProcID={self.id_proceso})")
     
 class Cpu:
@@ -62,13 +60,12 @@ class Cpu:
 
     def __repr__(self):
         if self.proceso_en_ejecucion:
-            return f"CPU(Ejecutando ID: {self.proceso_en_ejecucion.idProceso}, TR: {self.tiempo_restante_irrupcion})"
+            return f"CPU (Ejecutando ID: {self.proceso_en_ejecucion.idProceso}, TR: {self.tiempo_restante_irrupcion})"
         return "CPU(Libre)"
     
-# --- 3. Funciones de Creación de Tablas ---
+#FUNCIONES PARA CREAR LAS DIFERENTES TABLAS
 
-def crear_tabla_procesos_df(df_procs, titulo_tabla, estilo_header):
-    """Toma un DataFrame de PANDAS y devuelve un objeto Table de rich."""
+def crear_tabla_procesos_df(df_procs, titulo_tabla, estilo_header):     #Toma un DataFrame de PANDAS y devuelve un objeto Table de rich
     tabla = Table(
         title=titulo_tabla,
         box=box.ROUNDED,
@@ -76,9 +73,9 @@ def crear_tabla_procesos_df(df_procs, titulo_tabla, estilo_header):
         header_style=estilo_header
     )
     tabla.add_column("ID", justify="center")
-    tabla.add_column("Tamaño", justify="center")
-    tabla.add_column("Arribo", justify="center")
-    tabla.add_column("Irrupcion", justify="center")
+    tabla.add_column("TAMAÑO", justify="center")
+    tabla.add_column("ARRIBO", justify="center")
+    tabla.add_column("IRRUPCION", justify="center")
 
     for index, row in df_procs.iterrows():
         tabla.add_row(
@@ -89,8 +86,7 @@ def crear_tabla_procesos_df(df_procs, titulo_tabla, estilo_header):
         )
     return tabla
 
-def crear_tabla_rechazados_df(df_procs, titulo_tabla, estilo_header):
-    """Toma un DataFrame de PANDAS de procesos rechazados y muestra la Razón."""
+def crear_tabla_rechazados_df(df_procs, titulo_tabla, estilo_header):   #Toma un DataFrame de PANDAS de procesos rechazados y muestra la Razón
     tabla = Table(
         title=titulo_tabla,
         box=box.ROUNDED,
@@ -98,10 +94,10 @@ def crear_tabla_rechazados_df(df_procs, titulo_tabla, estilo_header):
         header_style=estilo_header
     )
     tabla.add_column("ID", justify="center")
-    tabla.add_column("Tamaño", justify="center")
-    tabla.add_column("Arribo", justify="center")
-    tabla.add_column("Irrupción", justify="center")
-    tabla.add_column("Razón de Rechazo", justify="left", style="yellow")
+    tabla.add_column("TAMAÑO", justify="center")
+    tabla.add_column("ARRIBO", justify="center")
+    tabla.add_column("IRRUPCION", justify="center")
+    tabla.add_column("RAZON DE RECHAZO", justify="center", style="yellow")
 
     for index, row in df_procs.iterrows():
         id_str = str(row.get('ID', 'N/A'))
@@ -109,7 +105,7 @@ def crear_tabla_rechazados_df(df_procs, titulo_tabla, estilo_header):
         arr_str = str(row.get('Arribo', 'N/A'))
         irr_str = str(row.get('Irrupcion', 'N/A'))
         
-        tabla.add_row(
+        tabla.add_row(          #Creacion de una linea por cada proceso
             id_str,
             f"{tam_str}K" if pd.notnull(row.get('Tamaño')) else tam_str,
             arr_str,
@@ -122,9 +118,8 @@ def crear_tabla_procesos(
     lista_procesos: List[Proceso], 
     titulo: str, 
     estilo_header: str, 
-    estilo_estado: str = "yellow"
-) -> Table:
-    """Crea una tabla de procesos (5 columnas) desde una List[Proceso]."""
+    estilo_estado: str
+) -> Table:                     #Crea una tabla de procesos de 5 columnas, desde una List (Proceso)
     tabla = Table(
         title=titulo,
         box=box.ROUNDED,
@@ -132,13 +127,13 @@ def crear_tabla_procesos(
         header_style=estilo_header
     )
     tabla.add_column("ID", justify="center")
-    tabla.add_column("Tamaño", justify="center")
-    tabla.add_column("Arribo", justify="center")
-    tabla.add_column("Irrupción", justify="center")
-    tabla.add_column("Estado", justify="center", style=estilo_estado)
+    tabla.add_column("TAMAÑO", justify="center")
+    tabla.add_column("ARRIBO", justify="center")
+    tabla.add_column("IRRUPCION", justify="center")
+    tabla.add_column("ESTADO", justify="center", style=estilo_estado)
 
     if not lista_procesos:
-        tabla.add_row("[dim]Vacía...[/dim]", "-", "-", "-", "-")
+        tabla.add_row("Vacía...", "-", "-", "-", "-")
     else:
         for proc in lista_procesos:
             tabla.add_row(
@@ -150,23 +145,22 @@ def crear_tabla_procesos(
             )
     return tabla
 
-def crear_tabla_particiones(particiones: List[Particion]) -> Table:
-    """Crea la tabla para la Tabla de Particiones de Memoria."""
+def crear_tabla_particiones(particiones: List[Particion]) -> Table:     #Crea la Tabla de Particiones de Memoria
     tabla = Table(
-        title="Tabla de Particiones de Memoria",
+        title="PARTICIONES DE MEMORIA",
         box=box.ROUNDED,
         show_header=True,
         header_style="bold cyan"
     )
-    tabla.add_column("ID Partición", justify="left")
-    tabla.add_column("Dir. Inicio", justify="center")
-    tabla.add_column("Tamaño", justify="center")
-    tabla.add_column("ID Proceso", justify="center")
-    tabla.add_column("Frag. Interna", justify="center")
+    tabla.add_column("ID PARTICION", justify="center")
+    tabla.add_column("DIR. INICIAL", justify="center")
+    tabla.add_column("TAMAÑO", justify="center")
+    tabla.add_column("ID PROCESO", justify="center")
+    tabla.add_column("FRAG. INTERNA", justify="center")
 
     for p in particiones:
         estilo = "on grey30" if p.id_part == "SO" else ""
-        id_proc_str = str(p.id_proceso) if p.id_proceso is not None else "[dim]Libre[/dim]"
+        id_proc_str = str(p.id_proceso) if p.id_proceso is not None else "LIBRE"
         frag_str = f"{p.fragmentacion}K" if p.fragmentacion > 0 else "0K"
         
         tabla.add_row(
@@ -179,20 +173,19 @@ def crear_tabla_particiones(particiones: List[Particion]) -> Table:
         )
     return tabla
 
-def crear_tabla_cpu(cpu: Cpu) -> Table:
-    """Crea la tabla para mostrar el estado de la CPU."""
+def crear_tabla_cpu(cpu: Cpu) -> Table:         #Crea la tabla para mostrar el estado de la CPU
     tabla = Table(
         title="CPU",
         box=box.ROUNDED,
         show_header=True,
         header_style="bold magenta"
     )
-    tabla.add_column("ID Proceso", justify="center")
-    tabla.add_column("Estado", justify="center")
-    tabla.add_column("Tiempo Restante", justify="center")
+    tabla.add_column("ID PROCESO", justify="center")
+    tabla.add_column("ESTADO", justify="center")
+    tabla.add_column("TIEMPO RESTANTE", justify="center")
 
     if cpu.esta_libre():
-        tabla.add_row("[dim]Libre[/dim]", "[dim]-[/dim]", "[dim]-[/dim]")
+        tabla.add_row("Libre", "-", "-")
     else:
         tabla.add_row(
             str(cpu.proceso_en_ejecucion.idProceso),
@@ -201,42 +194,27 @@ def crear_tabla_cpu(cpu: Cpu) -> Table:
         )
     return tabla
 
-def mostrar_logo(archivo_logo: str, color_logo: str = "green"):
-    """
-    Lee un archivo de texto (ASCII art) y lo imprime en la consola
-    línea por línea para un efecto de renderizado.
-    """
-    limpiar_pantalla()
+def mostrar_logo(archivo_logo: str):    #Muestra por pantalla un logo personalizado que se abre desde un archivo .txt
+    limpiar_pantalla()                  #Meticulosamente hecho por el Spartan B-312 Franco Yaya
     try:
-        # 1. Leer el contenido del archivo y guardarlo en una variable
         with open(archivo_logo, 'r', encoding='utf-8') as f:
             lineas = f.readlines()
-        
-        # Mover el cursor un poco hacia abajo para centrarlo verticalmente
-        console.print("\n\n")
-        
-        # 2. Renderizar línea a línea
-        for linea in lineas:
-            # Imprimir la línea sin saltos de línea extra y con color
-            console.print(linea.rstrip('\n'), style=color_logo)
-            # Pausa muy corta para el efecto de renderizado
-            time.sleep(0.05) 
-            
-        # Pausa al final para admirar el logo
-        time.sleep(1)
 
-    except FileNotFoundError:
-        # Manejar el error si el archivo .txt no se encuentra
-        console.print(f"[bold yellow]Advertencia:[/bold yellow] No se encontró el archivo del logo: '{archivo_logo}'.")
-        console.print("Asegúrate de que 'LogoSpinlock Spartans.txt' esté en la misma carpeta que el script.")
-        time.sleep(3) # Pausa para que se pueda leer el error
+        for linea in lineas:
+            console.print(linea.rstrip('\n'), style="bold green", justify="center")
+            time.sleep(0.05)
+        
+        console.print("\n")
+
+    except FileNotFoundError:   #Si el archivo .txt no se encuentra, maneja el error
+        console.print(f"[bold yellow]Advertencia:[/bold yellow] No se encontró el archivo de texto: '{archivo_logo}'.")
+        console.print("Asegúrate de que 'Splashcreen.txt' esté en la misma carpeta que el script.")
+        time.sleep(3)
     except Exception as e:
-        console.print(f"[bold red]Error al leer el logo:[/bold red] {e}")
+        console.print(f"[bold red]Error al leer el archivo de texto[/bold red] {e}")
         time.sleep(3)
 
-
-# --- 4. Funciones de Lógica del Simulador ---
-
+#FUNCIONES PARA LA LOGICA DEL SIMULADOR
 def buscar_particion_best_fit(proceso: Proceso, particiones: List[Particion]) -> int:
     mejor_particion_idx = -1
     min_fragmentacion = float('inf') 
@@ -284,12 +262,10 @@ def procesar_finalizaciones_y_promociones(
                 eventos.append(f"    -> Partición [bold]{part.id_part}[/bold] liberada.")
                 break
         
-        # --- Promoción basada en SRTF ---
-        if particion_liberada_idx != -1:
+        if particion_liberada_idx != -1:    #Promocion basada en SRTF
             particion_liberada = particiones[particion_liberada_idx]
             
-            # 1. Encontrar al más corto en ListoSuspendido que quepa
-            mejor_candidato_ls = None
+            mejor_candidato_ls = None       # 1. Encontrar al más corto en ListoSuspendido que quepa
             mejor_ti = float('inf')
             
             for proc_ls in cola_ls:
@@ -298,17 +274,12 @@ def procesar_finalizaciones_y_promociones(
                         mejor_ti = proc_ls.TI
                         mejor_candidato_ls = proc_ls
             
-            # 2. Si encontramos un candidato, promoverlo
-            if mejor_candidato_ls:
-                # Mover de ListoSuspendido a Listo
+            if mejor_candidato_ls:      # 2. Si encontramos un candidato, promoverlo a la cola Listo
                 mejor_candidato_ls.estado = "Listo"
                 cola_l.append(mejor_candidato_ls)
                 cola_ls.remove(mejor_candidato_ls)
-                
-                # Asignar la partición
-                particion_liberada.id_proceso = mejor_candidato_ls.idProceso
-                particion_liberada.fragmentacion = particion_liberada.tamano - mejor_candidato_ls.tamProceso
-                
+                particion_liberada.id_proceso = mejor_candidato_ls.idProceso        # Asignar la partición libre
+                particion_liberada.fragmentacion = particion_liberada.tamano - mejor_candidato_ls.tamProceso    #Calculo de fragmentacion de particion de memoria
                 eventos.append(
                     f"[cyan]Promoción (Listos/Suspendidos -> Listos):[/cyan] Proceso (SRTF) [bold]{mejor_candidato_ls.idProceso}[/bold] "
                     f"movido a 'Cola de Listos' y asignado a partición [bold]{particion_liberada.id_part}[/bold]."
@@ -329,14 +300,11 @@ def procesar_arribos(
     
     procesos_llegados_en_T = [p for p in colaDeTrabajo if p.TA <= T]
         
-    if procesos_llegados_en_T:
-        # Ordenar por TA y luego por ID
+    if procesos_llegados_en_T:          # Ordenar por TA y luego por ID
         procesos_llegados_en_T.sort(key=lambda p: (p.TA, p.idProceso))
         
-        for proceso_llegado in procesos_llegados_en_T:
-            # GDM se calcula en cada iteración para ser preciso
+        for proceso_llegado in procesos_llegados_en_T:          # GDM se calcula en cada iteración para ser preciso
             if (procesos_en_simulador_count + gdm_agregado) < GRADO_MAX_MULTIPROGRAMACION:
-                
                 idx_particion = buscar_particion_best_fit(proceso_llegado, particiones)
                 
                 if idx_particion != -1:
@@ -366,18 +334,14 @@ def gestor_cpu_srtf(
 
     eventos = []
     
-    # Ordenar Cola de Listos por SRTF (menor TI restante)
-    cola_l.sort(key=lambda p: p.TI)
+    cola_l.sort(key=lambda p: p.TI)         # Ordenar Cola de Listos por SRTF (menor TI restante)
     
     if cpu.esta_libre() and cola_l:
         proceso_a_cargar = cola_l.pop(0) 
         proceso_a_cargar.estado = "En Ejecución"
         cpu.proceso_en_ejecucion = proceso_a_cargar
         cpu.tiempo_restante_irrupcion = proceso_a_cargar.TI
-        
-        eventos.append(
-            f"[magenta]SRTF Carga:[/magenta] Proceso [bold]{proceso_a_cargar.idProceso}[/bold] (TI = {proceso_a_cargar.TI}) entra a la CPU."
-        )
+        eventos.append(f"[magenta]SRTF Carga:[/magenta] Proceso [bold]{proceso_a_cargar.idProceso}[/bold] (TI = {proceso_a_cargar.TI}) entra a la CPU.")
 
     elif not cpu.esta_libre() and cola_l:
         proceso_en_cpu = cpu.proceso_en_ejecucion
@@ -412,24 +376,17 @@ def gestor_intercambio_swap(
     cola_ls: List[Proceso], 
     particiones: List[Particion],
     cpu: Cpu
-) -> List[str]:
-    """
-    Intenta intercambiar un proceso de Listos/Suspendidos (alta prioridad, TI corto)
-    por un proceso en memoria (baja prioridad, TI largo).
-    """
-    eventos = []
-    
-    # 1. ¿Hay procesos esperando en LS para competir?
-    if not cola_ls:
+) -> List[str]:         #Intenta intercambiar un proceso de Listos/Suspendidos (alta prioridad, TI corto)
+    eventos = []        #por un proceso en memoria (baja prioridad, TI largo).
+        
+    if not cola_ls:         # 1. ¿Hay procesos esperando en LS para competir?
         return eventos # No hay nadie para intercambiar
 
-    # 2. Encontrar al mejor "Candidato" (el más corto en LS)
-    cola_ls.sort(key=lambda p: p.TI)
+    cola_ls.sort(key=lambda p: p.TI)        # 2. Encontrar al mejor "Candidato" (el más corto en LS)
     candidato = cola_ls[0]
 
-    # 3. Encontrar "Víctima", con el TI más largo en Memoria y que NO esté en la CPU)
-    victima = None
-    particion_victima = None
+    victima = None      # 3. Encontrar "Víctima", con el TI más largo en Memoria y que NO esté en la CPU)
+    particion_victima = None    
     ti_victima_max = -1 # Buscamos el TI más largo
 
     particiones_trabajo = [p for p in particiones if p.id_part != "SO"]
@@ -441,29 +398,21 @@ def gestor_intercambio_swap(
         if not cpu.esta_libre() and part.id_proceso == cpu.proceso_en_ejecucion.idProceso:
             continue
             
-        proceso_en_particion = None
-        # Encontrar el objeto Proceso "víctima" (que está en cola_l)
+        proceso_en_particion = None         # Encontrar el objeto Proceso "víctima" (que está en cola_l)
         for p_listo in cola_l:
              if p_listo.idProceso == part.id_proceso:
                  proceso_en_particion = p_listo
                  break
         
-        if proceso_en_particion:
-            # Comparamos el TI (tiempo restante)
+        if proceso_en_particion:            # Comparamos el TI (tiempo restante)
             if proceso_en_particion.TI > ti_victima_max:
                 ti_victima_max = proceso_en_particion.TI
                 victima = proceso_en_particion
                 particion_victima = part
 
-    # 4. ¿Encontramos una víctima? ¿Vale la pena el intercambio?
-    
-    if victima and candidato.TI < victima.TI:
-
-        # REGLA DE SEGURIDAD: ¿El candidato cabe en la partición de la víctima?
+    if victima and candidato.TI < victima.TI:       # 4. ¿Encontramos una víctima? ¿Vale la pena el intercambio?
         if candidato.tamProceso <= particion_victima.tamano:
-            
-            # --- Ejecutar SWAP ---
-            eventos.append(
+            eventos.append(                         # --- Ejecutar SWAP ---
                 f"[red]Swap Out:[/red] Proceso [bold]{victima.idProceso}[/bold] (TI = {victima.TI}) "
                 f"sale de Partición '{particion_victima.id_part}' y vuelve a 'Listos/Suspendidos'."
             )
@@ -478,40 +427,29 @@ def gestor_intercambio_swap(
             cola_ls.remove(candidato)
             candidato.estado = "Listo"
             cola_l.append(candidato)
-            
-            # Actualizar la partición
             particion_victima.id_proceso = candidato.idProceso
             particion_victima.fragmentacion = particion_victima.tamano - candidato.tamProceso
-    
     return eventos
 
+def main():     # --- FUNCIÓN PRINCIPAL ---
 
-# --- FUNCIÓN PRINCIPAL ---
-def main():
+    limpiar_pantalla()
+    mostrar_logo("Splashcreen.txt")
+    time.sleep(0.5)
 
-    # --- PANTALLA 1: Presentación ---
-    limpiar_pantalla() 
-
-    # 1. Mostrar el logo leyéndolo desde el archivo
-    mostrar_logo("Splashceen.txt", color_logo="bold green")
-    
-    # 2. Transición a integrantes
-    pausar_y_limpiar("Presiona Enter para ver los integrantes del grupo...")
-
-    integrantes_str = (
-        "\nIntegrantes:\n"
-        "  Blanco, Facundo\n"
-        "  Claver Gallino, Samira\n"
-        "  Cristaldo, Cristian Alejandro\n"
-        "  Echeverria Melgratti, Lautaro\n"
-        "  Yaya, Franco Gabriel"
+    integrantes = (
+        "\nBLANCO, FACUNDO\n"
+        "CLAVER GALLINO, SAMIRA\n"
+        "CRISTALDO, CRISTIAN ALEJANDRO\n"
+        "ECHEVERRIA MELGRATTI, LAUTARO\n"
+        "YAYA, FRANCO GABRIEL\n"
     )
-    text_integrantes = Text(integrantes_str, style="white", justify="left")
-    contenido_panel = Group(text_integrantes)
+
+    contenido_panel = Group(Text(integrantes, style="white", justify="center"))
     console.print(
         Panel(
             contenido_panel,
-            title="Proyecto de Simulación - Grupo Spinlock Spartans",
+            title="PROYECTO DE SIMULACIÓN",
             border_style="green"
         )
     )
@@ -535,14 +473,10 @@ def main():
 
     # --- PANTALLA 3: Filtrado y Resultados ---
     console.print(f"\n[bold yellow]Realizando Filtrado y Validación de Procesos[/bold yellow]")
-        
-    # Definir qué columnas deben ser tratadas como números
-    numeric_cols = ['Tamaño', 'Arribo', 'Irrupcion']
+    numeric_cols = ['Tamaño', 'Arribo', 'Irrupcion']    #Columnas numericas
     
     # Crear una copia del DataFrame original para no modificarlo
     df_validado = df_procesos.copy()
-    
-    # 1. Crear una columna vacía para guardar la razón del rechazo
     df_validado['Rechazo_Razon'] = ''
 
     # 2. FILTRO (ID vacío): Encontrar filas donde 'ID' es nulo
@@ -589,16 +523,15 @@ def main():
     else:
         msg = f"Se rechazaron {len(df_descartados)} proceso(s) por errores en los datos."
         console.print(f"\n[bold red]¡Atención![/bold red] {msg}\n")
-        tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "Procesos Aceptados", "bold green")
-        tabla_rechazados = crear_tabla_rechazados_df(df_descartados, "Procesos Rechazados", "bold red")
+        tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "PROCESOS ACEPTADOS", "bold green")
+        tabla_rechazados = crear_tabla_rechazados_df(df_descartados, "PROCESOS RECHAZADOS", "bold red")
         console.print(Columns([tabla_admitidos, tabla_rechazados], expand=True))
 
     # --- PANTALLA 4: Cola de Trabajo ---
     if not df_aceptados.empty:
         pausar_y_limpiar("Presiona Enter para crear la 'Cola de Trabajo' ordenada...")
         
-        console.print(f"\n[bold yellow]Ordenando procesos por 'Tiempo de Arribo' (TA) y creando 'Cola de Trabajo'...[/bold yellow]")
-        console.print()
+        console.print(f"\n[bold yellow]Ordenando procesos por Tiempo de Arribo (TA) y creando Cola de Trabajo...[/bold yellow]\n")
         df_aceptados_ordenados = df_aceptados.sort_values(by='Arribo').copy()
         
         colaDeTrabajo: List[Proceso] = []
@@ -613,23 +546,23 @@ def main():
         
         tabla_ct_completa = crear_tabla_procesos(
             colaDeTrabajo, 
-            "Cola de Trabajo",
+            "COLA DE TRABAJO",
             "bold cyan",
             "yellow"
         )
         console.print(tabla_ct_completa)
         
-        console.print(f"\n[bold green]¡Listo![/bold green] La 'Cola de Trabajo' está preparada.")
+        console.print(f"\n[bold green]¡Listo![/bold green] La Cola de Trabajo está preparada.")
     else:
         console.print("\n\n[bold yellow]No hay procesos admitidos para la simulación.[/bold yellow]")
         input("\nPresiona Enter para salir.")
         sys.exit()
 
-    pausar_y_limpiar("Presiona Enter para INICIAR LA SIMULACIÓN (T = 0)...")
+    pausar_y_limpiar("Presiona Enter para inicia la Simulacion (T = 0)...")
 
     # --- PANTALLA 5: BUCLE PRINCIPAL DE SIMULACIÓN ---
     
-    # --- 1. Inicialización de variables de simulación ---
+    #VARIABLES DE LAS SIMULACION
     T = 0 
     cola_listos_suspendidos: List[Proceso] = []
     cola_listos: List[Proceso] = []
@@ -693,11 +626,11 @@ def main():
         # --- Lógica de Mensajes de Espera ---
         if not eventos_final and not eventos_arribo and not eventos_srtf and not eventos_swap:
              if procesos_en_simulador_count > 0:
-                 eventos_T.append("[dim]... No hay eventos. Esperando ...[/dim]")
+                 eventos_T.append("... No hay eventos. Esperando ...")
              elif not colaDeTrabajo:
                  pass
              else:
-                 eventos_T.append("[dim]Sistema vacío, esperando arribos...[/dim]")
+                 eventos_T.append("Sistema vacío, esperando arribos...")
 
         # --- 2b. SALIDAS POR PANTALLA ---
 
@@ -707,8 +640,8 @@ def main():
         console.print()
 
         # Fila 1: Cola de Trabajo (Izquierda) | Procesos Terminados (Derecha)
-        tabla_ct_render = crear_tabla_procesos(colaDeTrabajo, "Cola de Trabajo", "bold cyan", "yellow")
-        tabla_term_render = crear_tabla_procesos(cola_terminados, "Procesos Terminados", "bold red", "red")
+        tabla_ct_render = crear_tabla_procesos(colaDeTrabajo, "COLA DE TRABAJO", "bold cyan", "yellow")
+        tabla_term_render = crear_tabla_procesos(cola_terminados, "PROCESO TERMINADO", "bold red", "red")
         console.print(Columns([tabla_ct_render, tabla_term_render], expand=True, equal=True))
 
         console.print()
@@ -717,23 +650,23 @@ def main():
         
         if not eventos_T:
              if not colaDeTrabajo and len(cola_listos) == 0 and len(cola_listos_suspendidos) == 0 and cpu.esta_libre():
-                 eventos_T.append("[dim]... (Simulación estancada, revisando fin) ...[/dim]")
+                 eventos_T.append("... (Simulación estancada, revisando fin) ...")
              else:
-                 eventos_T.append("[dim]... (Nada que reportar) ...[/dim]")
+                 eventos_T.append("... (Nada que reportar) ...")
         for evento in eventos_T:
             console.print(evento)
             
         console.print()
         
         # Fila 2: Cola de Listos/Suspendidos (Izquierda) | Tabla de Particiones (Derecha)
-        tabla_cls_render = crear_tabla_procesos(cola_listos_suspendidos, "Cola de Listos/Suspendidos", "bold yellow", "yellow")
+        tabla_cls_render = crear_tabla_procesos(cola_listos_suspendidos, "COLA DE LISTOS/SUSPENDIDOS", "bold yellow", "yellow")
         tabla_tp_render = crear_tabla_particiones(tabla_particiones)
         console.print(Columns([tabla_cls_render, tabla_tp_render], expand=True, equal=True))
         
         console.print()
         
         # Fila 3: Cola de Listos (Izquierda) | CPU (Derecha)
-        tabla_cl_render = crear_tabla_procesos(cola_listos, "Cola de Listos", "bold green", "green")
+        tabla_cl_render = crear_tabla_procesos(cola_listos, "COLA DE LISTOS", "bold green", "green")
         tabla_cpu_render = crear_tabla_cpu(cpu)
         console.print(Columns([tabla_cl_render, tabla_cpu_render], expand=True, equal=True))
         
@@ -753,16 +686,16 @@ def main():
 
     # --- Fin de la simulación ---
     limpiar_pantalla()
-    console.print(Rule("Estado Final del Sistema"))    
-    console.print(f"[bold green on black]Simulación Finalizada en T = {T} [/bold green on black]")
+    console.print(Rule("ESTADO FINAL DEL SISTEMA"))    
+    console.print(f"[bold green on black]Simulación finalizada en T = {T} [/bold green on black]")
     console.print()
     tabla_tp_render = crear_tabla_particiones(tabla_particiones)
     console.print(tabla_tp_render)
     console.print()
-    tabla_term_render = crear_tabla_procesos(cola_terminados, "Procesos Terminados", "dim", "dim")
+    tabla_term_render = crear_tabla_procesos(cola_terminados, "PROCESOS TERMINADOS", "yellow", "green")
     console.print(tabla_term_render)
     
-    input("\nPresiona Enter para salir.")
+    input("\nPresiona Enter para salir")
 
 if __name__ == "__main__":
     main()
