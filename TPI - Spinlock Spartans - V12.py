@@ -201,6 +201,40 @@ def crear_tabla_cpu(cpu: Cpu) -> Table:
         )
     return tabla
 
+def mostrar_logo(archivo_logo: str, color_logo: str = "green"):
+    """
+    Lee un archivo de texto (ASCII art) y lo imprime en la consola
+    línea por línea para un efecto de renderizado.
+    """
+    limpiar_pantalla()
+    try:
+        # 1. Leer el contenido del archivo y guardarlo en una variable
+        with open(archivo_logo, 'r', encoding='utf-8') as f:
+            lineas = f.readlines()
+        
+        # Mover el cursor un poco hacia abajo para centrarlo verticalmente
+        console.print("\n\n")
+        
+        # 2. Renderizar línea a línea
+        for linea in lineas:
+            # Imprimir la línea sin saltos de línea extra y con color
+            console.print(linea.rstrip('\n'), style=color_logo)
+            # Pausa muy corta para el efecto de renderizado
+            time.sleep(0.05) 
+            
+        # Pausa al final para admirar el logo
+        time.sleep(1)
+
+    except FileNotFoundError:
+        # Manejar el error si el archivo .txt no se encuentra
+        console.print(f"[bold yellow]Advertencia:[/bold yellow] No se encontró el archivo del logo: '{archivo_logo}'.")
+        console.print("Asegúrate de que 'LogoSpinlock Spartans.txt' esté en la misma carpeta que el script.")
+        time.sleep(3) # Pausa para que se pueda leer el error
+    except Exception as e:
+        console.print(f"[bold red]Error al leer el logo:[/bold red] {e}")
+        time.sleep(3)
+
+
 # --- 4. Funciones de Lógica del Simulador ---
 
 def buscar_particion_best_fit(proceso: Proceso, particiones: List[Particion]) -> int:
@@ -457,6 +491,13 @@ def main():
 
     # --- PANTALLA 1: Presentación ---
     limpiar_pantalla() 
+
+    # 1. Mostrar el logo leyéndolo desde el archivo
+    mostrar_logo("Splashceen.txt", color_logo="bold green")
+    
+    # 2. Transición a integrantes
+    pausar_y_limpiar("Presiona Enter para ver los integrantes del grupo...")
+
     integrantes_str = (
         "\nIntegrantes:\n"
         "  Blanco, Facundo\n"
