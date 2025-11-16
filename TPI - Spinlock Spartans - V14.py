@@ -10,6 +10,8 @@ from rich.text import Text
 from rich.columns import Columns
 from rich.rule import Rule
 from typing import List, Tuple
+from statistics import mean # Para calcular promedios
+
 
 #DEFINICIONES INICIALES
 console = Console()
@@ -32,7 +34,15 @@ class Proceso:
       self.tamProceso = tamProceso
       self.estado = estado
       self.TA = TA
-      self.TI = TI
+      
+      # TI se usará para el TI *restante* (para SRTF)
+      self.TI = TI 
+      
+      # Atributos para estadísticas
+      self.TI_original: int = TI            # Guardamos el TI original
+      self.tiempo_finalizacion: int = 0     # El instante de tiempo T en el que termina
+      self.tiempo_retorno: int = 0          # TR = TF - TA
+      self.tiempo_espera: int = 0           # TE = TR - TI_original
     
     def __repr__(self):
         return (f"Proceso (ID={self.idProceso}, Tam={self.tamProceso}K, "
@@ -214,6 +224,80 @@ def mostrar_logo(archivo_logo: str):    #Muestra por pantalla un logo personaliz
         console.print(f"[bold red]Error al leer el archivo de texto[/bold red] {e}")
         time.sleep(3)
 
+def mostrar_informe_estadistico(procesos_terminados: List[Proceso], tiempo_total: int):
+    """
+    Calcula y muestra la tabla de estadísticas finales y promedios.
+    """
+    console.print()
+    console.print(Rule("Informe Estadístico Final"))
+    console.print()
+
+    # 1. Crear Tabla de Tiempos por Proceso
+    tabla_tiempos = Table(
+        title="Tiempos por Proceso",
+        box=box.ROUNDED,
+        show_header=True,
+        header_style="bold green"
+    )
+    tabla_tiempos.add_column("ID", justify="center")
+    tabla_tiempos.add_column("T. Arribo (TA)", justify="center")
+    tabla_tiempos.add_column("T. Irrupción (TI)", justify="center")
+    tabla_tiempos.add_column("T. Finalización (TF)", justify="center")
+    tabla_tiempos.add_column("T. Retorno (TR = TF - TA)", justify="center")
+    tabla_tiempos.add_column("T. Espera (TE = TR - TI)", justify="center")
+
+    tiempos_retorno = []
+    tiempos_espera = []
+
+    # Ordenar por ID
+    procesos_terminados.sort(key=lambda p: p.idProceso)
+
+    for proc in procesos_terminados:
+        tabla_tiempos.add_row(
+            str(proc.idProceso),
+            str(proc.TA),
+            str(proc.TI_original), # Mostrar el TI Original
+            str(proc.tiempo_finalizacion),
+            f"[cyan]{proc.tiempo_retorno}[/cyan]",
+            f"[yellow]{proc.tiempo_espera}[/yellow]"
+        )
+        tiempos_retorno.append(proc.tiempo_retorno)
+        tiempos_espera.append(proc.tiempo_espera)
+
+    console.print(tabla_tiempos)
+    console.print()
+
+    # 2. Calcular Promedios y Rendimiento
+    if procesos_terminados: # Evitar división por cero
+        n = len(procesos_terminados)
+        # mean() toma una lista de números, los suma y los divide por la cantidad que hay en la lista
+        trp = mean(tiempos_retorno)
+        tep = mean(tiempos_espera)
+        # Rendimiento = Trabajos / Tiempo Total
+        rendimiento = n / tiempo_total 
+    else:
+        trp = 0
+        tep = 0
+        rendimiento = 0
+
+    # 3. Crear Tabla de Promedios
+    tabla_promedios = Table(
+        title="Estadísticas Globales",
+        box=box.ROUNDED,
+        show_header=False,
+        width=60
+    )
+    tabla_promedios.add_column("Métrica", justify="left", style="bold")
+    tabla_promedios.add_column("Valor", justify="right")
+    
+    tabla_promedios.add_row("Tiempo de Simulación Total", f"{tiempo_total} ticks")
+    tabla_promedios.add_row("Procesos Completados", f"{n} procesos")
+    tabla_promedios.add_row("Tiempo de Retorno Promedio (TRP)", f"[cyan]{trp:.2f} ticks[/cyan]")
+    tabla_promedios.add_row("Tiempo de Espera Promedio (TEP)", f"[yellow]{tep:.2f} ticks[/yellow]")
+    tabla_promedios.add_row("Rendimiento del Sistema", f"[green]{rendimiento:.3f} procesos/tick[/green]")
+    
+    console.print(tabla_promedios, justify="left")
+
 #FUNCIONES PARA LA LOGICA DEL SIMULADOR
 def buscar_particion_best_fit(proceso: Proceso, particiones: List[Particion]) -> int:
     mejor_particion_idx = -1
@@ -231,6 +315,7 @@ def buscar_particion_best_fit(proceso: Proceso, particiones: List[Particion]) ->
     return mejor_particion_idx
 
 def procesar_finalizaciones_y_promociones(
+    T: int,
     cpu: Cpu, 
     cola_l: List[Proceso], 
     cola_ls: List[Proceso], 
@@ -246,7 +331,13 @@ def procesar_finalizaciones_y_promociones(
         eventos.append(f"[red]Proceso Terminado:[/red] Proceso [bold]{proceso_actual.idProceso}[/bold] ha finalizado.")
         
         proceso_actual.estado = "Terminado"
-        proceso_actual.TI = 0
+        
+        # Capturamos el instante de tiempo T cuando el Proceso abandona la CPU
+        proceso_actual.tiempo_finalizacion = T 
+        # Calculamos TR y TE usando el TI_original
+        proceso_actual.tiempo_retorno = proceso_actual.tiempo_finalizacion - proceso_actual.TA
+        proceso_actual.tiempo_espera = proceso_actual.tiempo_retorno - proceso_actual.TI_original
+        
         cola_terminados.append(proceso_actual)
         gdm_liberado = 1 
         
@@ -278,8 +369,10 @@ def procesar_finalizaciones_y_promociones(
                 mejor_candidato_ls.estado = "Listo"
                 cola_l.append(mejor_candidato_ls)
                 cola_ls.remove(mejor_candidato_ls)
+                
                 particion_liberada.id_proceso = mejor_candidato_ls.idProceso        # Asignar la partición libre
                 particion_liberada.fragmentacion = particion_liberada.tamano - mejor_candidato_ls.tamProceso    #Calculo de fragmentacion de particion de memoria
+                
                 eventos.append(
                     f"[cyan]Promoción (Listos/Suspendidos -> Listos):[/cyan] [bold]Proceso {mejor_candidato_ls.idProceso}[/bold] "
                     f"movido a 'Cola de Listos' y asignado a partición [bold]{particion_liberada.id_part}[/bold]."
@@ -594,8 +687,9 @@ def main():     # --- FUNCIÓN PRINCIPAL ---
         
         # --- (Etapa 1 & 2: Finalizaciones y Promociones) ---
         # (Esto libera GDM y memoria)
+        # (Pasamos 'T' para que sepa el tiempo de finalización)
         eventos_final, gdm_liberado = procesar_finalizaciones_y_promociones(
-            cpu, cola_listos, cola_listos_suspendidos, cola_terminados, tabla_particiones
+            T, cpu, cola_listos, cola_listos_suspendidos, cola_terminados, tabla_particiones
         )
         if eventos_final:
             eventos_T.extend(eventos_final)
@@ -694,13 +788,15 @@ def main():     # --- FUNCIÓN PRINCIPAL ---
     # --- Fin de la simulación ---
     limpiar_pantalla()
     console.print(Rule("ESTADO FINAL DEL SISTEMA"))    
-    console.print(f"[bold green on black]Simulación finalizada en T = {T} [/bold green on black]")
-    console.print()
+    console.print(f"[bold green on black]Simulación finalizada en T = {T} [/bold green on black]\n")
+    
+    # Fila 1: Tabla de Particiones (Izquierda) | Procesos Terminados (Derecha)
     tabla_tp_render = crear_tabla_particiones(tabla_particiones)
-    console.print(tabla_tp_render)
-    console.print()
     tabla_term_render = crear_tabla_procesos(cola_terminados, "PROCESOS TERMINADOS", "yellow", "green")
-    console.print(tabla_term_render)
+    console.print(Columns([tabla_tp_render, tabla_term_render], expand=True, equal=True))
+
+    # Fila 2: Informe Estadístico
+    mostrar_informe_estadistico(cola_terminados, T)
     
     input("\nPresiona Enter para salir")
 
