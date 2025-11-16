@@ -333,9 +333,11 @@ def gestor_cpu_srtf(
 ) -> List[str]:
 
     eventos = []
+
+    # 1. Ordena la Cola de Listos (el más corto primero, menor TI restante)
+    cola_l.sort(key=lambda p: p.TI)
     
-    cola_l.sort(key=lambda p: p.TI)         # Ordenar Cola de Listos por SRTF (menor TI restante)
-    
+    # Si la CPU está libre, carga al más corto
     if cpu.esta_libre() and cola_l:
         proceso_a_cargar = cola_l.pop(0) 
         proceso_a_cargar.estado = "En Ejecución"
@@ -343,12 +345,15 @@ def gestor_cpu_srtf(
         cpu.tiempo_restante_irrupcion = proceso_a_cargar.TI
         eventos.append(f"[magenta]SRTF Carga:[/magenta] Proceso [bold]{proceso_a_cargar.idProceso}[/bold] (TI = {proceso_a_cargar.TI}) entra a la CPU.")
 
+    # 2. Lógica de APROPIACIÓN (cuando la CPU está OCUPADA)
     elif not cpu.esta_libre() and cola_l:
         proceso_en_cpu = cpu.proceso_en_ejecucion
-        proceso_mas_corto_listo = cola_l[0] 
+        proceso_mas_corto_listo = cola_l[0]     # El mejor de la Cola de Listos
         
         # Comprobar si hay un Proceso en "Listos" con un TI más corto que el *TI restante* del Proceso en CPU
         if proceso_mas_corto_listo.TI < cpu.tiempo_restante_irrupcion:
+            # El nuevo es MÁS CORTO
+            # Ocurre la apropiación
             eventos.append(
                 f"[magenta]SRTF Apropiación:[/magenta] Proceso [bold]{proceso_mas_corto_listo.idProceso}[/bold] (TI = {proceso_mas_corto_listo.TI}) "
                 f"desaloja al Proceso [bold]{proceso_en_cpu.idProceso}[/bold] (TR = {cpu.tiempo_restante_irrupcion})."
@@ -363,6 +368,8 @@ def gestor_cpu_srtf(
             proceso_nuevo.estado = "En Ejecución"
             cpu.proceso_en_ejecucion = proceso_nuevo
             cpu.tiempo_restante_irrupcion = proceso_nuevo.TI
+        # Si la condición 'if' NO se cumple:
+        # El proceso nuevo se queda al principio de la 'cola_l' y el proceso en la CPU continúa ejecutándose.
     return eventos
 
 def ejecutar_tick_cpu(cpu: Cpu):
