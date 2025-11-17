@@ -1,17 +1,13 @@
 from varGlobal import console
 from importaciones import *
 
+# Calcula y muestra la tabla de estadísticas finales y promedios.
 def mostrar_informe_estadistico(procesos_terminados: List[Proceso], tiempo_total: int):
-    """
-    Calcula y muestra la tabla de estadísticas finales y promedios.
-    """
-    console.print()
-    console.print(Rule("Informe Estadístico Final"))
-    console.print()
+
+    console.print(Rule("\nInforme Estadístico Final\n"))
 
     # 1. Crear Tabla de Tiempos por Proceso
     tabla_tiempos = Table(
-        title="Tiempos por Proceso",
         box=box.ROUNDED,
         show_header=True,
         header_style="bold green"
@@ -42,7 +38,6 @@ def mostrar_informe_estadistico(procesos_terminados: List[Proceso], tiempo_total
         tiempos_espera.append(proc.tiempo_espera)
 
     console.print(tabla_tiempos)
-    console.print()
 
     # 2. Calcular Promedios y Rendimiento
     if procesos_terminados: # Evitar división por cero
@@ -68,7 +63,6 @@ def mostrar_informe_estadistico(procesos_terminados: List[Proceso], tiempo_total
     tabla_promedios.add_column("Valor", justify="right")
     
     tabla_promedios.add_row("Tiempo de Simulación Total", f"{tiempo_total} ticks")
-    tabla_promedios.add_row("Procesos Completados", f"{n} procesos")
     tabla_promedios.add_row("Tiempo de Retorno Promedio (TRP)", f"[cyan]{trp:.2f} ticks[/cyan]")
     tabla_promedios.add_row("Tiempo de Espera Promedio (TEP)", f"[yellow]{tep:.2f} ticks[/yellow]")
     tabla_promedios.add_row("Rendimiento del Sistema", f"[green]{rendimiento:.3f} procesos/tick[/green]")
