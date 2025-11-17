@@ -121,7 +121,10 @@ def main():
         
         # --- Condición de Fin del Bucle ---
         if procesos_terminados_count >= procesos_totales_count:
-            console.print("\n[bold green]... (Todos los procesos han sido procesados) ...[/bold green]")
+            console.print("\n[bold red]   --->>> Todos los procesos finalizaron con éxito. <<<---   [/bold red]")
+            time.sleep(3)
+            limpiar_pantalla()
+            
             break
 
         # --- Pausa para avanzar T ---
@@ -134,14 +137,15 @@ def main():
         T += 1
     # --- Fin de la simulación ---
 
-    limpiar_pantalla()
-    console.print(Rule("ESTADO FINAL DEL SISTEMA"))    
-    console.print(f"[bold green on black]Simulación finalizada en T = {T} [/bold green on black]\n")
+
+    # limpiar_pantalla()
+    # console.print(Rule("ESTADO FINAL DEL SISTEMA"))
+    console.print(f"[bold green on black]\nSimulación finalizada en T = {T} [/bold green on black]\n")
     
     # Fila 1: Tabla de Particiones (Izquierda) | Procesos Terminados (Derecha)
-    tabla_tp_render = crear_tabla_particiones(tabla_particiones)
-    tabla_term_render = crear_tabla_procesos(cola_terminados, "PROCESOS TERMINADOS", "yellow", "green")
-    console.print(Columns([tabla_tp_render, tabla_term_render], expand=True, equal=True))
+    # tabla_tp_render = crear_tabla_particiones(tabla_particiones)
+    # tabla_term_render = crear_tabla_procesos(cola_terminados, "PROCESOS TERMINADOS", "yellow", "green")
+    # console.print(Columns([tabla_tp_render, tabla_term_render], expand=True, equal=True))
 
     # Fila 2: Informe Estadístico
     mostrar_informe_estadistico(cola_terminados, T)

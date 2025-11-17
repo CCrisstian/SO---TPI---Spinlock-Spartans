@@ -1,5 +1,9 @@
+# falta agregar filtro para numeros grandes, para ti = tiempo decimal, para id's iguales
+
 from varGlobal import console, MAX_MEMORIA
 from importaciones import *
+
+MAX_VALOR_PERMITIDO = 10000
 
 def cargarProcesos():
     # --- PANTALLA 2: Procesos Leídos ---
@@ -24,7 +28,7 @@ def filtrarProcesos(df_procesos):
 
     # --- PANTALLA 3: Filtrado y Resultados ---
     console.print(f"\n[bold yellow]Realizando Filtrado y Validación de Procesos[/bold yellow]")
-    numeric_cols = ['Tamaño', 'Arribo', 'Irrupcion']    #Columnas numericas
+    numeric_cols = ['Tamaño', 'Arribo', 'Irrupcion']    # Columnas numericas
     
     # Crear una copia del DataFrame original para no modificarlo
     df_validado = df_procesos.copy()
@@ -39,8 +43,14 @@ def filtrarProcesos(df_procesos):
     for col in numeric_cols:
         df_validado[col] = pd.to_numeric(df_validado[col], errors='coerce') # 'errors='coerce'' convierte texto en 'NaN' (Not a Number)
 
+    mask_decimales = (df_validado[col] % 1 != 0) & (df_validado[col].notnull())
     mask_nan = df_validado[numeric_cols].isnull().any(axis=1) # Encontrar filas y las marcamos
+    mask_muy_grande = (df_validado['Arribo'] > MAX_VALOR_PERMITIDO) | (df_validado['Irrupcion'] > MAX_VALOR_PERMITIDO)
     df_validado.loc[mask_nan & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'Campo vacío o no numérico'
+    df_validado.loc[mask_decimales & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = f'Tiempo de {col} es decimal'
+    df_validado.loc[mask_muy_grande & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'Valor excede límite permitido'
+
+
 
     # 4. FILTRO (Valor no positivo):
     mask_no_positivo = (df_validado['Tamaño'] <= 0) | (df_validado['Irrupcion'] <= 0) | (df_validado['Arribo'] < 0)
@@ -48,7 +58,10 @@ def filtrarProcesos(df_procesos):
 
     # 5. FILTRO (Memoria Máxima):
     mask_memoria = df_validado['Tamaño'] > MAX_MEMORIA
+    mask_duplicados = df_validado.duplicated(subset=['ID'], keep='first')
     df_validado.loc[mask_memoria & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = f'Excede Memoria Máx. ({MAX_MEMORIA}K)'
+    df_validado.loc[mask_duplicados & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'ID Duplicado'
+    
     
     # 6. Crear el DataFrame de ACEPTADOS
     df_aceptados = df_validado[df_validado['Rechazo_Razon'] == ''].copy()
