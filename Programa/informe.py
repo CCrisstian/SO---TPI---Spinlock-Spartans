@@ -62,10 +62,10 @@ def mostrar_informe_estadistico(procesos_terminados: List[Proceso], tiempo_total
     tabla_promedios.add_column("Métrica", justify="left", style="bold")
     tabla_promedios.add_column("Valor", justify="right")
     
-    tabla_promedios.add_row("Tiempo de Simulación Total", f"{tiempo_total} ticks")
-    tabla_promedios.add_row("Tiempo de Retorno Promedio (TRP)", f"[cyan]{trp:.2f} ticks[/cyan]")
-    tabla_promedios.add_row("Tiempo de Espera Promedio (TEP)", f"[yellow]{tep:.2f} ticks[/yellow]")
-    tabla_promedios.add_row("Rendimiento del Sistema", f"[green]{rendimiento:.3f} procesos/tick[/green]")
+    tabla_promedios.add_row("Tiempo de Simulación Total", f"{tiempo_total} u.t.")
+    tabla_promedios.add_row("Tiempo de Retorno Promedio (TRP)", f"[cyan]{trp:.2f} u.t.[/cyan]")
+    tabla_promedios.add_row("Tiempo de Espera Promedio (TEP)", f"[yellow]{tep:.2f} u.t.[/yellow]")
+    tabla_promedios.add_row("Rendimiento del Sistema", f"[green]{rendimiento:.3f} procesos/u.t.[/green]")
     
     console.print(tabla_promedios, justify="left")
 

@@ -32,7 +32,7 @@ def procesar_finalizaciones_y_promociones(
     
     if not cpu.esta_libre() and cpu.tiempo_restante_irrupcion <= 0:
         proceso_actual = cpu.proceso_en_ejecucion
-        eventos.append(f"[red]Proceso Terminado:[/red] Proceso [bold]{proceso_actual.idProceso}[/bold] ha finalizado.")
+        eventos.append(f"[red]FINALIZÓ[/red] el proceso [bold]{proceso_actual.idProceso}[/bold].")
         
         proceso_actual.estado = "Terminado"
         
@@ -78,8 +78,8 @@ def procesar_finalizaciones_y_promociones(
                 particion_liberada.fragmentacion = particion_liberada.tamano - mejor_candidato_ls.tamProceso    #Calculo de fragmentacion de particion de memoria
                 
                 eventos.append(
-                    f"[cyan]Promoción (Listos/Suspendidos -> Listos):[/cyan] [bold]Proceso {mejor_candidato_ls.idProceso}[/bold] "
-                    f"movido a 'Cola de Listos' y asignado a partición [bold]{particion_liberada.id_part}[/bold]."
+                    f"[cyan]PROMOCIÓN (Listos/Suspendidos -> Listos)[/cyan] del[bold] proceso {mejor_candidato_ls.idProceso}[/bold]; "
+                    f"Se lo asignó a la partición [bold]{particion_liberada.id_part}[/bold]."
                 )            
     return eventos, gdm_liberado
 
@@ -106,21 +106,21 @@ def procesar_arribos(
                 
                 if idx_particion != -1:
                     particion_asignada = particiones[idx_particion]
-                    eventos.append(f"[green]Arribo:[/green] Proceso [bold]{proceso_llegado.idProceso}[/bold]. Asignado a [bold]{particion_asignada.id_part}[/bold].")
+                    eventos.append(f"[green]ARRIBO [/green]del proceso [bold]{proceso_llegado.idProceso}[/bold], ingresó a memoria y fue asignado a la partición [bold]{particion_asignada.id_part}[/bold].")
                     proceso_llegado.estado = "Listo"
                     cola_l.append(proceso_llegado)
                     colaDeTrabajo.remove(proceso_llegado)
                     particion_asignada.id_proceso = proceso_llegado.idProceso
                     particion_asignada.fragmentacion = particion_asignada.tamano - proceso_llegado.tamProceso
                 else:
-                    eventos.append(f"[yellow]Arribo (Sin Memoria):[/yellow] Proceso [bold]{proceso_llegado.idProceso}[/bold]. Pasa a 'Listos/Suspendidos'.")
+                    eventos.append(f"[green]ARRIBO [/green]del proceso [bold]{proceso_llegado.idProceso}[/bold]; [yellow]No existe memoria suficiente [/yellow]para albergarlo entonces pasa a 'Listos/Suspendidos'.")
                     proceso_llegado.estado = "Listo y Suspendido"
                     cola_ls.append(proceso_llegado)
                     colaDeTrabajo.remove(proceso_llegado)
                 
                 gdm_agregado += 1
             else:
-                eventos.append(f"[yellow]Arribo Bloqueado:[/yellow] Proceso [bold]{proceso_llegado.idProceso}[/bold], GDM ({GRADO_MAX_MULTIPROGRAMACION}) lleno. Espera.")
+                eventos.append(f"[yellow]Arribo Bloqueado[/yellow] del proceso [bold]{proceso_llegado.idProceso}[/bold], se alcanzó el grado máximo de multiprogramación ({GRADO_MAX_MULTIPROGRAMACION}). Proceso en espera.")
 
     return eventos, gdm_agregado
 
@@ -140,7 +140,7 @@ def gestor_cpu_srtf(
         proceso_a_cargar.estado = "En Ejecución"
         cpu.proceso_en_ejecucion = proceso_a_cargar
         cpu.tiempo_restante_irrupcion = proceso_a_cargar.TI
-        eventos.append(f"[magenta]SRTF Carga:[/magenta] Proceso [bold]{proceso_a_cargar.idProceso}[/bold] (TI = {proceso_a_cargar.TI}) entra a la CPU.")
+        eventos.append(f"[magenta]CARGA [/magenta]del proceso [bold]{proceso_a_cargar.idProceso}[/bold] con TI = {proceso_a_cargar.TI} a la CPU.")
 
     # 2. Lógica de APROPIACIÓN (cuando la CPU está OCUPADA)
     elif not cpu.esta_libre() and cola_l:
@@ -152,8 +152,8 @@ def gestor_cpu_srtf(
             # El nuevo es MÁS CORTO
             # Ocurre la apropiación
             eventos.append(
-                f"[magenta]SRTF Apropiación:[/magenta] Proceso [bold]{proceso_mas_corto_listo.idProceso}[/bold] (TI = {proceso_mas_corto_listo.TI}) "
-                f"desaloja al Proceso [bold]{proceso_en_cpu.idProceso}[/bold] (TR = {cpu.tiempo_restante_irrupcion})."
+                f"[magenta]SRTF Apropiación:[/magenta] Proceso [bold]{proceso_mas_corto_listo.idProceso}[/bold] con TI = {proceso_mas_corto_listo.TI} "
+                f"desaloja al Proceso [bold]{proceso_en_cpu.idProceso}[/bold] con TR = {cpu.tiempo_restante_irrupcion}."
             )
             
             proceso_en_cpu.estado = "Listo"
@@ -169,10 +169,18 @@ def gestor_cpu_srtf(
         # El proceso nuevo se queda al principio de la 'cola_l' y el proceso en la CPU continúa ejecutándose.
     return eventos
 
-def ejecutar_tick_cpu(cpu: Cpu):
+def ejecutar_tick_cpu(cpu: Cpu, unidades: int = 1):
+    # Descuenta unidades de tiempo a la ráfaga del proceso en CPU.
+    
     if not cpu.esta_libre():
-        cpu.tiempo_restante_irrupcion -= 1
-        # Actualizamos el TI del Proceso para que SRTF siempre vea el valor restante
+        # Descontamos el tiempo que pasó (el salto)
+        cpu.tiempo_restante_irrupcion -= unidades
+        
+        # Por seguridad, evitamos negativos (aunque la lógica de MAIN debería prevenirlo)
+        if cpu.tiempo_restante_irrupcion < 0:
+            cpu.tiempo_restante_irrupcion = 0
+            
+        # Actualizamos el TI del objeto Proceso para que SRTF y las tablas vean el valor actual
         cpu.proceso_en_ejecucion.TI = cpu.tiempo_restante_irrupcion
 
 def gestor_intercambio_swap(

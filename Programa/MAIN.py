@@ -69,33 +69,79 @@ def main():
         if eventos_srtf:
             eventos_T.extend(eventos_srtf)
         
-        # --- (Etapa 5: Ejecución de 1 unidad de tiempo) ---
-        ejecutar_tick_cpu(cpu)
+        # --- ETAPA 5: CÁLCULO DEL SIGUIENTE EVENTO ---
 
-        # --- Lógica de Mensajes de Espera ---
+        # 1. Calculamos el siguiente candidato de ARRIBO
+        proximo_arribo_t = float('inf')
+        id_proximo_arribo = None
+        
+        # Buscamos el proceso con el menor TA que sea mayor al T actual
+        candidatos_arribo = [p for p in colaDeTrabajo if p.TA > T]
+        if candidatos_arribo:
+            # Encontramos el proceso más cercano
+            proceso_mas_cercano = min(candidatos_arribo, key=lambda p: p.TA)
+            proximo_arribo_t = proceso_mas_cercano.TA
+            id_proximo_arribo = proceso_mas_cercano.idProceso
+
+        # 2. Calcular candidato FIN DE CPU
+        fin_cpu_t = float('inf')
+        id_proceso_cpu = None
+        if not cpu.esta_libre():
+            fin_cpu_t = T + cpu.tiempo_restante_irrupcion
+            id_proceso_cpu = cpu.proceso_en_ejecucion.idProceso
+
+        # 3. Determinar el GANADOR (El evento más cercano)
+        proximo_evento_t = float('inf')
+        razon_salto = ""
+        icono_evento = ""
+
+        if proximo_arribo_t < fin_cpu_t:
+            # Gana el Arribo
+            proximo_evento_t = proximo_arribo_t
+            razon_salto = f"Arribo del proceso {id_proximo_arribo}"
+            icono_evento = "[green]➔ [/green]"
+        elif fin_cpu_t < proximo_arribo_t:
+            # Gana el Fin de CPU
+            proximo_evento_t = fin_cpu_t
+            razon_salto = f"Fin de del proceso {id_proceso_cpu} en CPU"
+            icono_evento = "[red]➔ [/red]"
+        elif proximo_arribo_t == fin_cpu_t and proximo_arribo_t != float('inf'):
+            # Empate (Simultáneos)
+            proximo_evento_t = proximo_arribo_t
+            razon_salto = f"Arribo P{id_proximo_arribo} y Fin CPU P{id_proceso_cpu}"
+            icono_evento = "[yellow]➔ [/yellow]"
+        else:
+            # No hay eventos futuros definidos (solo queda avanzar por defecto)
+            razon_salto = "Paso de tiempo (Sin eventos)"
+            icono_evento = "[grey]➔ [/grey]"
+
+        # 4. Calcular la magnitud del salto
+        if proximo_evento_t == float('inf'):
+             salto_tiempo = 1
+        else:
+             salto_tiempo = proximo_evento_t - T
+        
+        if salto_tiempo < 1: 
+            salto_tiempo = 1
+            razon_salto = "Continuar ejecución"
+
+        # --- Lógica de Mensajes de Espera (Ahora mucho más clara) ---
         if not eventos_final and not eventos_arribo and not eventos_srtf and not eventos_swap:
-             if procesos_en_simulador_count > 0:
-                 eventos_T.append("... No hay eventos. Esperando ...")
-             elif not colaDeTrabajo:
-                 pass
-             else:
-                 eventos_T.append("Sistema vacío, esperando arribos...")
+             # Agregamos el mensaje informativo al log de eventos para que se vea en el centro
+             msg_avance = f"{icono_evento} Avanzamos [bold]{salto_tiempo} u.t.[/bold] porque esperamos: [bold]{razon_salto}[/bold]"
+             eventos_T.append(msg_avance)
 
         # --- 2b. SALIDAS POR PANTALLA ---
 
         limpiar_pantalla()
-        
-        console.print(f"[bold white on blue] Instante de Tiempo T = {T} [/bold white on blue]", justify="center")
-        console.print()
 
         # Fila 1: Cola de Trabajo (Izquierda) | Procesos Terminados (Derecha)
         tabla_ct_render = crear_tabla_procesos(colaDeTrabajo, "COLA DE TRABAJO", "bold cyan", "yellow")
         tabla_term_render = crear_tabla_procesos(cola_terminados, "PROCESO TERMINADO", "bold red", "red")
         console.print(Columns([tabla_ct_render, tabla_term_render], expand=True, equal=True))
 
-        console.print()
-
         console.print(Rule("Simulador"))
+        console.print(f"[bold white on blue] \nInstante de Tiempo T = {T} [/bold white on blue]\n", justify="center")
         
         if not eventos_T:
              if not colaDeTrabajo and len(cola_listos) == 0 and len(cola_listos_suspendidos) == 0 and cpu.esta_libre():
@@ -121,20 +167,29 @@ def main():
         
         # --- Condición de Fin del Bucle ---
         if procesos_terminados_count >= procesos_totales_count:
-            console.print("\n[bold red]   --->>> Todos los procesos finalizaron con éxito. <<<---   [/bold red]")
-            time.sleep(3)
+            console.print("\n[bold green]\n\n Finalizaron todos los procesos :). [/bold green]")
+            input("Presione 'Enter' para realizar el informe estadístico.")
             limpiar_pantalla()
             
             break
 
-        # --- Pausa para avanzar T ---
+        # --- Pausa y Actualización de T ---
         try:
-            input(f"\nPresione Enter para avanzar a T = {T+1}...")
+            mensaje_input = (
+                f"\n[bold cyan]Próximo Evento:[/bold cyan] {razon_salto}\n"
+                f"Presione Enter para avanzar [bold]{salto_tiempo} u.t.[/bold] (T -> {T + salto_tiempo})..."
+            )
+            console.print(mensaje_input, end="")
+            input()
         except KeyboardInterrupt:
             console.print("\n[red]Simulación interrumpida por el usuario.[/red]")
             sys.exit()
             
-        T += 1
+        ejecutar_tick_cpu(cpu, unidades=salto_tiempo)
+
+        # APLICAMOS EL SALTO
+        T += salto_tiempo
+
     # --- Fin de la simulación ---
 
 
