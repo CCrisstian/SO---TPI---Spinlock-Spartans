@@ -153,7 +153,7 @@ def gestor_cpu_srtf(
             # Ocurre la apropiación
             eventos.append(
                 f"[magenta]SRTF Apropiación:[/magenta] Proceso [bold]{proceso_mas_corto_listo.idProceso}[/bold] con TI = {proceso_mas_corto_listo.TI} "
-                f"desaloja al Proceso [bold]{proceso_en_cpu.idProceso}[/bold] con TR = {cpu.tiempo_restante_irrupcion}."
+                f"desaloja al Proceso [bold]{proceso_en_cpu.idProceso}[/bold] con TI = {cpu.tiempo_restante_irrupcion}."
             )
             
             proceso_en_cpu.estado = "Listo"
