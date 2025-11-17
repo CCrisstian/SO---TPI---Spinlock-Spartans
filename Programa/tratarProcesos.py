@@ -73,6 +73,17 @@ def filtrarProcesos(df_procesos):
     for col in numeric_cols:
         df_aceptados[col] = df_aceptados[col].astype('Int64')
 
+    # Solo se admiten 10 procesos
+    if len(df_aceptados) > 10:
+        # Descarto desde el onceavo
+        df_sobrantes = df_aceptados.iloc[10:].copy()
+        df_sobrantes['Rechazo_Razon'] = 'Excede límite de 10 procesos admitidos'
+        
+        df_aceptados = df_aceptados.head(10).copy()
+        
+        # Uno los sobrantes al DataFrame de descartados para que se muestre en el informe final
+        df_descartados = pd.concat([df_descartados, df_sobrantes], ignore_index=True)
+
     # --- Mostrar resultados ---
     if df_descartados.empty:
         console.print(f"\n[bold green]Procesos validados. Todos los procesos han sido Aceptados.[/bold green]\n")
