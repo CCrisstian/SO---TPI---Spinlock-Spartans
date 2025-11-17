@@ -27,7 +27,7 @@ def cargarProcesos():
 def filtrarProcesos(df_procesos):
 
     # --- PANTALLA 3: Filtrado y Resultados ---
-    console.print(f"\n[bold yellow]Realizando Filtrado y Validación de Procesos[/bold yellow]")
+    console.print(f"\n[bold yellow]Se realizará un filtrado y validación de los procesos cargados. [/bold yellow]")
     numeric_cols = ['Tamaño', 'Arribo', 'Irrupcion']    # Columnas numericas
     
     # Crear una copia del DataFrame original para no modificarlo
@@ -90,7 +90,7 @@ def filtrarProcesos(df_procesos):
         tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "Procesos Aceptados", "bold green")
         console.print(tabla_admitidos)
     else:
-        msg = f"Se rechazaron {len(df_descartados)} proceso(s) por errores en los datos."
+        msg = f"Se rechazaron {len(df_descartados)} proceso(s) por errores en los datos o porque se excedió el limite de procesos admitidos."
         console.print(f"\n[bold red]¡Atención![/bold red] {msg}\n")
         tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "PROCESOS ACEPTADOS", "bold green")
         tabla_rechazados = crear_tabla_rechazados_df(df_descartados, "PROCESOS RECHAZADOS", "bold red")
@@ -101,9 +101,9 @@ def filtrarProcesos(df_procesos):
 def crearColaDeTrabajo(df_aceptados):
 
     if not df_aceptados.empty:
-        pausar_y_limpiar("Presiona Enter para crear la 'Cola de Trabajo' ordenada...")
+        pausar_y_limpiar("Presione 'Enter' para ordenar y crear la Cola de Trabajo...")
         
-        console.print(f"\n[bold yellow]Ordenando procesos por Tiempo de Arribo (TA) y creando Cola de Trabajo...[/bold yellow]\n")
+        console.print(f"\n[bold yellow]Se ordenaron los procesos por Tiempo de Arribo (TA) y se creó la Cola de Trabajo...[/bold yellow]\n")
         df_aceptados_ordenados = df_aceptados.sort_values(by='Arribo').copy()
         
         colaDeTrabajo: List[Proceso] = []
@@ -123,13 +123,11 @@ def crearColaDeTrabajo(df_aceptados):
             "yellow"
         )
         console.print(tabla_ct_completa)
-        
-        console.print(f"\n[bold green]¡Listo![/bold green] La Cola de Trabajo está preparada.")
     else:
         console.print("\n\n[bold yellow]No hay procesos admitidos para la simulación.[/bold yellow]")
-        input("\nPresiona Enter para salir.")
+        input("\nPresione 'Enter' para salir.")
         sys.exit()
 
-    pausar_y_limpiar("Presiona Enter para inicia la Simulacion (T = 0)...")
+    pausar_y_limpiar("Presione 'Enter' para iniciar la Simulación...")
 
     return colaDeTrabajo
