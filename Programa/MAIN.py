@@ -198,9 +198,9 @@ def main():
     console.print(f"[bold green on black]\nSimulación finalizada en T = {T} [/bold green on black]\n")
     
     # Fila 1: Tabla de Particiones (Izquierda) | Procesos Terminados (Derecha)
-    # tabla_tp_render = crear_tabla_particiones(tabla_particiones)
-    # tabla_term_render = crear_tabla_procesos(cola_terminados, "PROCESOS TERMINADOS", "yellow", "green")
-    # console.print(Columns([tabla_tp_render, tabla_term_render], expand=True, equal=True))
+    tabla_tp_render = crear_tabla_particiones(tabla_particiones)
+    tabla_term_render = crear_tabla_procesos(cola_terminados, "PROCESOS TERMINADOS", "yellow", "green")
+    console.print(Columns([tabla_tp_render, tabla_term_render], expand=True, equal=True))
 
     # Fila 2: Informe Estadístico
     mostrar_informe_estadistico(cola_terminados, T)
