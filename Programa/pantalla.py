@@ -32,7 +32,7 @@ def mostrar_logo(archivo_logo: str):    #Muestra por pantalla un logo personaliz
 
 def pantallaInicial(): 
     limpiar_pantalla()
-    mostrar_logo("Programa/Splashcreen.txt")
+    mostrar_logo("Splashcreen.txt")
     time.sleep(0.5)
 
     integrantes = (
