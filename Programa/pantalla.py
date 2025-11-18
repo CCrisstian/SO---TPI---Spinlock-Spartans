@@ -32,7 +32,9 @@ def mostrar_logo(archivo_logo: str):    #Muestra por pantalla un logo personaliz
 
 def pantallaInicial(): 
     limpiar_pantalla()
-    mostrar_logo("Splashcreen.txt")
+    directorio_actual = os.path.dirname(os.path.abspath(__file__))
+    ruta_splash = os.path.join(directorio_actual, "Splashcreen.txt")
+    mostrar_logo(ruta_splash)
     time.sleep(0.5)
 
     integrantes = (

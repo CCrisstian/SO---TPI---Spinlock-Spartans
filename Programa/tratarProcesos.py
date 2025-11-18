@@ -7,7 +7,16 @@ MAX_VALOR_PERMITIDO = 10000
 
 def cargarProcesos():
     # --- PANTALLA 2: Procesos Leídos ---
-    archivo_CSV = "ArchivosEjemplo/procesos.csv" 
+    # 1. Obtener la carpeta 'Programa'
+    carpeta_programa = os.path.dirname(os.path.abspath(__file__))
+    
+    # 2. Obtener la carpeta PADRE 'SO - Spinlock Spartans'
+    # Usamos os.path.dirname() una segunda vez para "subir" un nivel
+    carpeta_raiz = os.path.dirname(carpeta_programa)
+    
+    # 3. Construir la ruta hacia la carpeta 'ArchivosEjemplo'
+    archivo_CSV = os.path.join(carpeta_raiz, "ArchivosEjemplo", "procesos.csv")
+
     try:
         df_procesos = pd.read_csv(archivo_CSV)
     except FileNotFoundError:
