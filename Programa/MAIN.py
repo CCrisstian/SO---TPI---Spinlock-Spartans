@@ -139,7 +139,8 @@ def main():
         tabla_ct_render = crear_tabla_procesos(colaDeTrabajo, "COLA DE TRABAJO", "bold cyan", "yellow")
         tabla_term_render = crear_tabla_procesos(cola_terminados, "PROCESO TERMINADO", "bold red", "red")
         console.print(Columns([tabla_ct_render, tabla_term_render], expand=True, equal=True))
-
+        console.print()
+        
         console.print(Rule("Simulador"))
         console.print(f"[bold white on blue] \nInstante de Tiempo T = {T} [/bold white on blue]\n", justify="center")
         
@@ -201,7 +202,8 @@ def main():
     tabla_tp_render = crear_tabla_particiones(tabla_particiones)
     tabla_term_render = crear_tabla_procesos(cola_terminados, "PROCESOS TERMINADOS", "yellow", "green")
     console.print(Columns([tabla_tp_render, tabla_term_render], expand=True, equal=True))
-
+    console.print()
+    
     # Fila 2: Informe Estadístico
     mostrar_informe_estadistico(cola_terminados, T)
     

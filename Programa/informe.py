@@ -4,7 +4,7 @@ from importaciones import *
 # Calcula y muestra la tabla de estadísticas finales y promedios.
 def mostrar_informe_estadistico(procesos_terminados: List[Proceso], tiempo_total: int):
 
-    console.print(Rule("\nInforme Estadístico Final\n"))
+    console.print(Rule("\n\nInforme Estadístico Final\n"))
 
     # 1. Crear Tabla de Tiempos por Proceso
     tabla_tiempos = Table(
@@ -38,6 +38,7 @@ def mostrar_informe_estadistico(procesos_terminados: List[Proceso], tiempo_total
         tiempos_espera.append(proc.tiempo_espera)
 
     console.print(tabla_tiempos)
+    console.print()
 
     # 2. Calcular Promedios y Rendimiento
     if procesos_terminados: # Evitar división por cero
