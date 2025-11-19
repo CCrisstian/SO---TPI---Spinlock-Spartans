@@ -1,4 +1,4 @@
-from importaciones import os, time, Panel, Text, Group
+from importaciones import os, time, Panel, Text, Group, sys
 from varGlobal import console
 
 # --- FUNCIONES DE UTILIDAD E INTERFAZ ---
@@ -46,10 +46,18 @@ def pantallaInicial():
     el panel con los nombres de los integrantes.
     """ 
     limpiar_pantalla()
-    directorio_actual = os.path.dirname(os.path.abspath(__file__))
+    
+    # --- BLOQUE CORREGIDO PARA EXE ---
+    if getattr(sys, 'frozen', False):
+        # Si estamos en el .EXE, usamos la ruta del ejecutable
+        directorio_actual = os.path.dirname(sys.executable)
+    else:
+        # Si estamos en Python normal, usamos __file__
+        directorio_actual = os.path.dirname(os.path.abspath(__file__))
+    # ---------------------------------
+
     ruta_splash = os.path.join(directorio_actual, "Splashcreen.txt")
     mostrar_logo(ruta_splash)
-    time.sleep(0.5)
 
     integrantes = (
         "\nBLANCO, FACUNDO\n"

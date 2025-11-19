@@ -1,24 +1,43 @@
-<h1>Información General</h1>
+👥 Integrantes - Grupo "Spinlock Spartans"
 
-Proyecto para la materia de Sistemas Operativos, desarrollado en Python.
-Este script simula un "mini Sistema Operativo", realizando la carga inicial, el filtrado y la organización de procesos leídos desde un archivo CSV, preparando el terreno para la asignación de memoria y planificación de un CPU.
+- Blanco, Facundo
+- Claver Gallino, Samira
+- Cristaldo, Cristian Alejandro
+- Echeverria Melgratti, Lautaro
+- Yaya, Franco Gabriel
 
-Utiliza `pandas` para el manejo de datos y `rich` para una presentación visual moderna y limpia en la terminal.
+Materia: Sistemas Operativos
 
-## ✅ Características
+🛡️ TPI- Simulación de Planificación de CPU y Gestión de Memoria. 
 
-* **Pantalla de Bienvenida:** Muestra una presentación del grupo "Spinlock Spartans" y sus integrantes.
-* **Interfaz Clara:** Guía al usuario paso a paso con transiciones que pausan y limpian la pantalla.
-* **Lectura de CSV:** Carga procesos desde un archivo `.csv` local usando `pandas`.
-* **Filtrado de Memoria:** Valida los procesos leídos y descarta aquellos que exceden la memoria máxima del sistema (fijada en 250K).
-* **Reporte Visual:** Muestra tablas lado a lado de los "Procesos Admitidos" y "Procesos Rechazados" para una fácil comparación.
-* **Ordenamiento por Arribo:** Ordena la lista final de procesos admitidos por su Tiempo de Arribo (TA).
+📖 Descripción: Este software simula el comportamiento del Kernel de un Sistema Operativo monoprocesador. Realiza la carga de trabajos desde un lote externo, administra la Memoria Principal utilizando particiones fijas y planifica la CPU mediante algoritmos de corto y mediano plazo.
 
-## 📦 Instalación
+Desarrollado en Python utilizando pandas para la gestión de datos y rich para la visualización de tablas y eventos en tiempo real en la consola.
 
-El proyecto requiere Python 3.x y las siguientes librerías:
+✅ Funcionalidades Implementadas
+1. Gestión de Memoria
+	Esquema: Particiones Fijas (4 particiones de tamaños variados).
+	Algoritmo de Asignación: Best-Fit (Mejor Ajuste). Busca la partición libre más pequeña donde quepa el proceso para minimizar la fragmentación interna.
 
-1.  Instala las dependencias necesarias con un solo comando:
-    ```bash
-    pip install pandas rich
-    ```
+2. Planificación de CPU (Corto Plazo)
+	Algoritmo: SRTF (Shortest Remaining Time First).
+	Características: Apropiativo (Preemptive). Si llega un proceso con una ráfaga menor a la restante del proceso actual, se realiza un desalojo (context switch).
+
+3. Planificación de Mediano Plazo (Swapping)
+	Mecanismo: Intercambio entre Memoria Principal y Disco (Cola de Suspendidos).
+	Criterio: Si la memoria está llena, se intercambia un proceso "lento" en memoria por uno "rápido" que esté esperando en disco, maximizando el rendimiento del sistema.
+
+4. Interfaz y Reportes
+	Filtrado Inteligente: Validación de procesos (IDs duplicados, tamaño excedido, datos corruptos) antes de iniciar.
+	Visualización en Vivo: Tablas simultáneas de Cola de Listos, CPU, Memoria y Disco.
+	Informe Estadístico: Al finalizar, calcula y muestra el Tiempo de Retorno (TR) y Tiempo de Espera (TE) de cada proceso.
+
+🚀 Instrucciones de Ejecución
+	- El proyecto se entrega compilado para facilitar su ejecución en Windows sin necesidad de instalar dependencias.
+	- Descomprimir la carpeta del proyecto.
+	- Ingresar a la carpeta Programa.
+	- Ejecutar el archivo Simulador_Spartans.exe.
+	- El sistema cargará automáticamente el archivo procesos.csv ubicado en la carpeta ArchivosEjemplo.
+
+Nota: No mueva el ejecutable de su carpeta, ya que necesita los archivos adjuntos para funcionar.
+

@@ -11,10 +11,21 @@ def cargarProcesos():
     """
     # --- PANTALLA 2: Procesos Leídos ---
     # Rutas relativas para encontrar el CSV independientemente de dónde se instale el proyecto
-    carpeta_programa = os.path.dirname(os.path.abspath(__file__))
+    
+    # --- BLOQUE CORREGIDO PARA EXE ---
+    if getattr(sys, 'frozen', False):
+        # Si es EXE, la carpeta del programa es donde está el .exe
+        carpeta_programa = os.path.dirname(sys.executable)
+    else:
+        # Si es Script, es donde está este archivo .py
+        carpeta_programa = os.path.dirname(os.path.abspath(__file__))
+    # ---------------------------------
+    
+    # Obtener la carpeta PADRE 'SO - Spinlock Spartans'
     carpeta_raiz = os.path.dirname(carpeta_programa)
+    
+    # Construir la ruta hacia la carpeta 'ArchivosEjemplo'
     archivo_CSV = os.path.join(carpeta_raiz, "ArchivosEjemplo", "procesos.csv")
-
     try:
         df_procesos = pd.read_csv(archivo_CSV)
     except FileNotFoundError:
