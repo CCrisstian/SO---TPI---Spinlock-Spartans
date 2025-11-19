@@ -297,7 +297,7 @@ def gestor_intercambio_swap(
             # --- Ejecutar SWAP OUT ---
             eventos.append(                         
                 f"[red]Swap Out:[/red] Proceso [bold]{victima.idProceso}[/bold] (TI = {victima.TI}) "
-                f"sale de Partición '{particion_victima.id_part}' y vuelve a 'Listos/Suspendidos'."
+                f"sale de Partición '{particion_victima.id_part}' y va a 'Listos/Suspendidos'."
             )
             cola_l.remove(victima)
             victima.estado = "Listo y Suspendido"
