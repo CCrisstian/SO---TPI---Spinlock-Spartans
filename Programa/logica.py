@@ -55,7 +55,7 @@ def procesar_finalizaciones_y_promociones(
         # --- Cálculo de Estadísticas ---
         # T = Instante actual (Finalización)
         proceso_actual.tiempo_finalizacion = T 
-        proceso_actual.tiempo_retorno = proceso_actual.tiempo_finalizacion - proceso_actual.TA
+        proceso_actual.tiempo_retorno = proceso_actual.tiempo_finalizacion - proceso_actual.TA_paraCalculo
         proceso_actual.tiempo_espera = proceso_actual.tiempo_retorno - proceso_actual.TI_original
         
         cola_terminados.append(proceso_actual)
@@ -79,6 +79,7 @@ def procesar_finalizaciones_y_promociones(
         if particion_liberada_idx != -1:    
             particion_liberada = particiones[particion_liberada_idx]
             
+            # Promoción basada en SRTF
             mejor_candidato_ls = None       
             mejor_ti = float('inf')
             
@@ -91,6 +92,11 @@ def procesar_finalizaciones_y_promociones(
                         mejor_candidato_ls = proc_ls
             
             if mejor_candidato_ls:      # Si encontramos a alguien, lo traemos a Memoria
+                # --- Capturar Tiempo Arribo A LISTOS, Si es la primera vez ---
+                if not mejor_candidato_ls.es_primer_arribo_listos:
+                    mejor_candidato_ls.TA_paraCalculo = T
+                    mejor_candidato_ls.es_primer_arribo_listos = True
+
                 mejor_candidato_ls.estado = "Listo"
                 cola_l.append(mejor_candidato_ls)
                 cola_ls.remove(mejor_candidato_ls)
@@ -105,7 +111,7 @@ def procesar_finalizaciones_y_promociones(
     return eventos, gdm_liberado
 
 def procesar_arribos(
-    T: int,
+    T: int,                         # Si el entra a Listos directamente, guardamos T en TA_paraCalculo.
     colaDeTrabajo: List[Proceso], 
     cola_l: List[Proceso], 
     cola_ls: List[Proceso], 
@@ -137,6 +143,11 @@ def procesar_arribos(
                 if idx_particion != -1:
                     # CASO 1: Entra en Memoria -> Cola de Listos
                     particion_asignada = particiones[idx_particion]
+
+                    # --- Captura el Tiempo de Arribo a LISTOS por 1ra vez ---
+                    proceso_llegado.TA_paraCalculo = T
+                    proceso_llegado.es_primer_arribo_listos = True
+
                     eventos.append(f"[green]ARRIBO [/green]del proceso [bold]{proceso_llegado.idProceso}[/bold], ingresó a memoria y fue asignado a la partición [bold]{particion_asignada.id_part}[/bold].")
                     proceso_llegado.estado = "Listo"
                     cola_l.append(proceso_llegado)
@@ -223,6 +234,7 @@ def ejecutar_tick_cpu(cpu: Cpu, unidades: int = 1):
         cpu.proceso_en_ejecucion.TI = cpu.tiempo_restante_irrupcion
 
 def gestor_intercambio_swap(
+    T: int,                     # Si entra por a Listos por Swap, guardamos T en TA_paraCalculo
     cola_l: List[Proceso], 
     cola_ls: List[Proceso], 
     particiones: List[Particion],
@@ -277,6 +289,11 @@ def gestor_intercambio_swap(
     if victima and candidato.TI < victima.TI:       
         if candidato.tamProceso <= particion_victima.tamano: # Y si cabe físicamente
             
+            # --- Capturar Tiempo Arribo A LISTOS, Si es la primera vez ---
+            if not candidato.es_primer_arribo_listos:
+                candidato.TA_paraCalculo = T
+                candidato.es_primer_arribo_listos = True
+
             # --- Ejecutar SWAP OUT ---
             eventos.append(                         
                 f"[red]Swap Out:[/red] Proceso [bold]{victima.idProceso}[/bold] (TI = {victima.TI}) "

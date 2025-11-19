@@ -55,7 +55,7 @@ def main():
         # Si la memoria está llena, verificamos si alguien en Disco (Suspendido)
         # tiene mayor prioridad (menos TI) que alguien en RAM para hacer un swapp.
         eventos_swap = gestor_intercambio_swap(
-            cola_listos, cola_listos_suspendidos, tabla_particiones, cpu
+            T, cola_listos, cola_listos_suspendidos, tabla_particiones, cpu
         )
         if eventos_swap:
             eventos_T.extend(eventos_swap)

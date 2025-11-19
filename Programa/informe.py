@@ -13,7 +13,8 @@ def mostrar_informe_estadistico(procesos_terminados: List[Proceso], tiempo_total
         header_style="bold green"
     )
     tabla_tiempos.add_column("ID", justify="center")
-    tabla_tiempos.add_column("T. Arribo (TA)", justify="center")
+    tabla_tiempos.add_column("TA (Sistema)", justify="center") # TA Original
+    tabla_tiempos.add_column("TA (Listos)", justify="center")  # TA para Calculo
     tabla_tiempos.add_column("T. Irrupción (TI)", justify="center")
     tabla_tiempos.add_column("T. Finalización (TF)", justify="center")
     tabla_tiempos.add_column("T. Retorno (TR = TF - TA)", justify="center")
@@ -29,7 +30,8 @@ def mostrar_informe_estadistico(procesos_terminados: List[Proceso], tiempo_total
     for proc in procesos_terminados:
         tabla_tiempos.add_row(
             str(proc.idProceso),
-            str(proc.TA),
+            str(proc.TA),               # TA Original
+            str(proc.TA_paraCalculo),   # TA para calculo
             str(proc.TI_original), # Mostrar el TI Original
             str(proc.tiempo_finalizacion),
             f"[cyan]{proc.tiempo_retorno}[/cyan]",

@@ -16,7 +16,8 @@ class Proceso:
       self.tiempo_finalizacion: int = 0     # El instante de tiempo T en el que termina
       self.tiempo_retorno: int = 0          # TR = TF - TA
       self.tiempo_espera: int = 0           # TE = TR - TI_original
-    
+      self.es_primer_arribo_listos: bool = False # Bandera
+      self.TA_paraCalculo: int = 0          # El TA cuando entró a Listos por 1ra vez
     def __repr__(self):
         return (f"Proceso (ID={self.idProceso}, Tam={self.tamProceso}K, "
                 f"Estado='{self.estado}', TA={self.TA}, TI={self.TI})")
