@@ -1,7 +1,8 @@
 
-
+# creamos una clase para tratar proceso, partición y CPU como objetos.
 class Proceso:
     def __init__(self, idProceso, tamProceso, TA, TI, estado="Nuevo"):
+      # atributos...
       self.idProceso = idProceso
       self.tamProceso = tamProceso
       self.estado = estado
@@ -21,8 +22,9 @@ class Proceso:
                 f"Estado='{self.estado}', TA={self.TA}, TI={self.TI})")
 
 class Particion:
+    # parámetros para definir el objeto
     def __init__(self, id_part: str, dir_inicio: int, tamano: int, id_proceso: str | int = None, fragmentacion: int = 0):
-      self.id_part = id_part
+      self.id_part = id_part    # atributos...
       self.dir_inicio = dir_inicio
       self.tamano = tamano
       self.id_proceso = id_proceso
@@ -34,12 +36,15 @@ class Particion:
     
 class Cpu:
     def __init__(self):
+        # constructor
         self.proceso_en_ejecucion: Proceso | None = None
         self.tiempo_restante_irrupcion: int = 0
     
+    # Función para preguntar si el objeto está libre
     def esta_libre(self) -> bool:
         return self.proceso_en_ejecucion is None
 
+    # Función que determina que proceso está en ejecución. 
     def __repr__(self):
         if self.proceso_en_ejecucion:
             return f"CPU (Ejecutando ID: {self.proceso_en_ejecucion.idProceso}, TR: {self.tiempo_restante_irrupcion})"

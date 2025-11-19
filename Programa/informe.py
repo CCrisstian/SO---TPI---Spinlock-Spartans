@@ -25,6 +25,7 @@ def mostrar_informe_estadistico(procesos_terminados: List[Proceso], tiempo_total
     # Ordenar por ID
     procesos_terminados.sort(key=lambda p: p.idProceso)
 
+    # cargamos los procesos en la tabla creada
     for proc in procesos_terminados:
         tabla_tiempos.add_row(
             str(proc.idProceso),
