@@ -1,22 +1,27 @@
-# falta agregar filtro para numeros grandes, para ti = tiempo decimal, para id's iguales
-
 from varGlobal import console, MAX_MEMORIA
 from importaciones import *
 
+# Máximo tiempo permitido, ya sea de irrupción o de arribo.
 MAX_VALOR_PERMITIDO = 10000
 
-def cargarProcesos():
+def cargarProcesos():           # Localiza y lee el archivo 'procesos.csv'. Maneja errores de ruta o archivo no encontrado.
     # --- PANTALLA 2: Procesos Leídos ---
-    # 1. Obtener la carpeta 'Programa'
-    carpeta_programa = os.path.dirname(os.path.abspath(__file__))
+    # Rutas relativas para encontrar el CSV independientemente de dónde se instale el proyecto
     
-    # 2. Obtener la carpeta PADRE 'SO - Spinlock Spartans'
-    # Usamos os.path.dirname() una segunda vez para "subir" un nivel
+    # --- BLOQUE CORREGIDO PARA EXE ---
+    if getattr(sys, 'frozen', False):
+        # Si es EXE, la carpeta del programa es donde está el .exe
+        carpeta_programa = os.path.dirname(sys.executable)
+    else:
+        # Si es Script, es donde está este archivo .py
+        carpeta_programa = os.path.dirname(os.path.abspath(__file__))
+    # ---------------------------------
+    
+    # Obtener la carpeta PADRE 'SO - Spinlock Spartans'
     carpeta_raiz = os.path.dirname(carpeta_programa)
     
-    # 3. Construir la ruta hacia la carpeta 'ArchivosEjemplo'
+    # Construir la ruta hacia la carpeta 'ArchivosEjemplo'
     archivo_CSV = os.path.join(carpeta_raiz, "ArchivosEjemplo", "procesos.csv")
-
     try:
         df_procesos = pd.read_csv(archivo_CSV)
     except FileNotFoundError:
@@ -33,68 +38,51 @@ def cargarProcesos():
     
     return df_procesos
 
-def filtrarProcesos(df_procesos):
-
-    # --- PANTALLA 3: Filtrado y Resultados ---
+def filtrarProcesos(df_procesos):       # Aplica filtros para validar los datos.
+                                        # Genera dos DataFrames: Aceptados (para simulación) y Rechazados (para reporte).
     console.print(f"\n[bold yellow]Se realizará un filtrado y validación de los procesos cargados. [/bold yellow]")
-    numeric_cols = ['Tamaño', 'Arribo', 'Irrupcion']    # Columnas numericas
+    numeric_cols = ['Tamaño', 'Arribo', 'Irrupcion']    
     
-    # Crear una copia del DataFrame original para no modificarlo
-    df_validado = df_procesos.copy()
+    df_validado = df_procesos.copy()    # Trabajamos sobre una copia para no alterar la lectura original
     df_validado['Rechazo_Razon'] = ''
-
-    # 2. FILTRO (ID vacío): Encontrar filas donde 'ID' es nulo
-    mask_id_vacio = df_validado['ID'].isnull()
-    df_validado.loc[mask_id_vacio, 'Rechazo_Razon'] = 'ID vacío' # Marcar esas filas con el motivo del rechazo
-
-    
-    # 3. FILTRO (No numérico): Intentar convertir columnas a número
+    # 1. FILTRO: El ID no puede estar vacío
+    mask_id_vacio = df_validado['ID'].isnull()       
+    df_validado.loc[mask_id_vacio, 'Rechazo_Razon'] = 'ID vacío' 
+    # 2. FILTRO: Los campos numéricos deben ser números validos
     for col in numeric_cols:
-        df_validado[col] = pd.to_numeric(df_validado[col], errors='coerce') # 'errors='coerce'' convierte texto en 'NaN' (Not a Number)
-
+        df_validado[col] = pd.to_numeric(df_validado[col], errors='coerce') 
+    # Detección de errores específicos (decimales, nulos, números gigantes)
     mask_decimales = (df_validado[col] % 1 != 0) & (df_validado[col].notnull())
-    mask_nan = df_validado[numeric_cols].isnull().any(axis=1) # Encontrar filas y las marcamos
+    mask_nan = df_validado[numeric_cols].isnull().any(axis=1) 
     mask_muy_grande = (df_validado['Arribo'] > MAX_VALOR_PERMITIDO) | (df_validado['Irrupcion'] > MAX_VALOR_PERMITIDO)
+    
     df_validado.loc[mask_nan & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'Campo vacío o no numérico'
     df_validado.loc[mask_decimales & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = f'Tiempo de {col} es decimal'
-    df_validado.loc[mask_muy_grande & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'Valor excede límite permitido'
-
-
-
-    # 4. FILTRO (Valor no positivo):
+    df_validado.loc[mask_muy_grande & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = f'Excede el límite de tiempo permitido de {MAX_VALOR_PERMITIDO}'
+    # 3. FILTRO: No existen tiempos o tamaños negativos
     mask_no_positivo = (df_validado['Tamaño'] <= 0) | (df_validado['Irrupcion'] <= 0) | (df_validado['Arribo'] < 0)
     df_validado.loc[mask_no_positivo & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'Valor negativo'
-
-    # 5. FILTRO (Memoria Máxima):
+    # 4. FILTRO: Límites Físicos y Lógicos
     mask_memoria = df_validado['Tamaño'] > MAX_MEMORIA
-    mask_duplicados = df_validado.duplicated(subset=['ID'], keep='first')
+    mask_duplicados = df_validado.duplicated(subset=['ID'], keep='first') # IDs únicos
+    
     df_validado.loc[mask_memoria & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = f'Excede Memoria Máx. ({MAX_MEMORIA}K)'
     df_validado.loc[mask_duplicados & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'ID Duplicado'
-    
-    
-    # 6. Crear el DataFrame de ACEPTADOS
+    # Separación de Aceptados vs Descartados
     df_aceptados = df_validado[df_validado['Rechazo_Razon'] == ''].copy()
-
-    # 7. Crear el DataFrame de DESCARTADOS
     df_descartados = df_validado[df_validado['Rechazo_Razon'] != ''].copy()
 
-    # 8. Limpieza: Asegurarse de que los datos aceptados sean Enteros
-    for col in numeric_cols:
+    for col in numeric_cols:        # Conversión a entero para presentación
         df_aceptados[col] = df_aceptados[col].astype('Int64')
-
-    # Solo se admiten 10 procesos
+    # 5. FILTRO: Límite de procesos en la simulación (Max 10)
     if len(df_aceptados) > 10:
-        # Descarto desde el onceavo
         df_sobrantes = df_aceptados.iloc[10:].copy()
         df_sobrantes['Rechazo_Razon'] = 'Excede límite de 10 procesos admitidos'
         
         df_aceptados = df_aceptados.head(10).copy()
-        
-        # Uno los sobrantes al DataFrame de descartados para que se muestre en el informe final
         df_descartados = pd.concat([df_descartados, df_sobrantes], ignore_index=True)
 
-    # --- Mostrar resultados ---
-    if df_descartados.empty:
+    if df_descartados.empty:        # Informe de los filtros realizados
         console.print(f"\n[bold green]Procesos validados. Todos los procesos han sido Aceptados.[/bold green]\n")
         tabla_admitidos = crear_tabla_procesos_df(df_aceptados, "Procesos Aceptados", "bold green")
         console.print(tabla_admitidos)
@@ -107,9 +95,8 @@ def filtrarProcesos(df_procesos):
 
     return df_aceptados
 
-def crearColaDeTrabajo(df_aceptados):
-
-    if not df_aceptados.empty:
+def crearColaDeTrabajo(df_aceptados):           # Convierte el DataFrame validado en una Lista de Objetos 'Proceso' y
+    if not df_aceptados.empty:                  # la ordena por Tiempo de Arribo. Esto simula la cola de entrada al sistema.
         pausar_y_limpiar("Presione 'Enter' para ordenar y crear la Cola de Trabajo...")
         
         console.print(f"\n[bold yellow]Se ordenaron los procesos por Tiempo de Arribo (TA) y se creó la Cola de Trabajo...[/bold yellow]\n")

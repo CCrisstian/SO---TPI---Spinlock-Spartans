@@ -1,3 +1,4 @@
+# Lista de librerias que se utilizan para hacer las distintas funciones
 import pandas as pd
 import os
 import sys
