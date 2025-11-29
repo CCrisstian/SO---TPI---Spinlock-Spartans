@@ -1,0 +1,20 @@
+# --- Entornos Virtuales (¡Lo más importante!) ---
+venv_tpi/
+venv/
+env/
+.env
+
+# --- Basura de Compilación (PyInstaller) ---
+# Estas carpetas se crean cada vez que compilas, no sirven en la nube
+build/
+dist/
+*.spec
+
+# --- Archivos compilados automáticos de Python ---
+__pycache__/
+*.pyc
+
+# --- Archivos de sistema/IDE (Opcional pero recomendado) ---
+.vscode/
+.idea/
+.DS_Store
