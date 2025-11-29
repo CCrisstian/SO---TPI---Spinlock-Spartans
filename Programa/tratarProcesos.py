@@ -6,38 +6,74 @@ MAX_VALOR_PERMITIDO = 10000
 
 def cargarProcesos():
     """
-    Localiza y lee el archivo 'procesos.csv'.
-    Maneja errores de ruta o archivo no encontrado.
+    Lista los archivos CSV/Excel en la carpeta 'ArchivosEjemplo',
+    permite al usuario elegir uno y lo carga en un DataFrame.
     """
-    # --- PANTALLA 2: Procesos Leídos ---
-    # Rutas relativas para encontrar el CSV independientemente de dónde se instale el proyecto
+    # --- PANTALLA 2: Selección de Lote ---
     
-    # --- BLOQUE CORREGIDO PARA EXE ---
+    # 1. Rutas relativas (Tu lógica original estaba perfecta)
     if getattr(sys, 'frozen', False):
-        # Si es EXE, la carpeta del programa es donde está el .exe
         carpeta_programa = os.path.dirname(sys.executable)
     else:
-        # Si es Script, es donde está este archivo .py
         carpeta_programa = os.path.dirname(os.path.abspath(__file__))
-    # ---------------------------------
     
-    # Obtener la carpeta PADRE 'SO - Spinlock Spartans'
     carpeta_raiz = os.path.dirname(carpeta_programa)
+    carpeta_ejemplos = os.path.join(carpeta_raiz, "ArchivosEjemplo")
+
+    # 2. Verificar que la carpeta existe
+    if not os.path.exists(carpeta_ejemplos):
+        console.print(f"\n[bold red]¡ERROR![/bold red] No se encontró la carpeta: '{carpeta_ejemplos}'")
+        sys.exit()
+
+    # 3. Buscar archivos CSV y Excel (.xlsx)
+    archivos_disponibles = [f for f in os.listdir(carpeta_ejemplos) if f.endswith('.csv') or f.endswith('.xlsx')]
+
+    if not archivos_disponibles:
+        console.print(f"\n[bold red]¡ERROR![/bold red] La carpeta '{carpeta_ejemplos}' está vacía o no tiene archivos .csv/.xlsx")
+        sys.exit()
+
+    # 4. Mostrar menú de selección
+    console.print("\n[bold cyan]--- SELECCIÓN DE LOTE DE PROCESOS ---[/bold cyan]")
+    console.print(f"Carpeta: [yellow]{carpeta_ejemplos}[/yellow]\n")
+
+    for i, archivo in enumerate(archivos_disponibles):
+        console.print(f"[bold green]{i + 1}.[/bold green] {archivo}")
+
+    # 5. Bucle para que el usuario elija
+    archivo_seleccionado = ""
+    while True:
+        try:
+            opcion = input("\n>> Ingrese el número del archivo a cargar: ")
+            indice = int(opcion) - 1
+            if 0 <= indice < len(archivos_disponibles):
+                archivo_seleccionado = archivos_disponibles[indice]
+                break
+            else:
+                console.print("[red]Número fuera de rango. Intente nuevamente.[/red]")
+        except ValueError:
+            console.print("[red]Por favor, ingrese un número válido.[/red]")
+
+    # 6. Cargar el archivo elegido
+    ruta_completa = os.path.join(carpeta_ejemplos, archivo_seleccionado)
     
-    # Construir la ruta hacia la carpeta 'ArchivosEjemplo'
-    archivo_CSV = os.path.join(carpeta_raiz, "ArchivosEjemplo", "procesos.csv")
+    console.print(f"\n[bold yellow]Cargando '{archivo_seleccionado}'...[/bold yellow]")
+
     try:
-        df_procesos = pd.read_csv(archivo_CSV)
-    except FileNotFoundError:
-        console.print(f"\n[bold red]¡ERROR![/bold red] No se pudo encontrar el archivo: '{archivo_CSV}'")
-        console.print("Asegúrate de que 'procesos.csv' esté en la misma carpeta.")
-        sys.exit()
+        # Detectamos si es CSV o Excel para usar la función correcta de Pandas
+        if archivo_seleccionado.endswith('.csv'):
+            df_procesos = pd.read_csv(ruta_completa)
+        else:
+            # Nota: Para leer Excel necesitas instalar: pip install openpyxl
+            df_procesos = pd.read_excel(ruta_completa)
+            
     except Exception as e:
-        console.print(f"\n[bold red]¡ERROR![/bold red] Ocurrió un error inesperado al leer el archivo: {e}")
+        console.print(f"\n[bold red]¡ERROR![/bold red] Ocurrió un error al leer el archivo: {e}")
         sys.exit()
     
-    tabla_todos = crear_tabla_procesos_df(df_procesos, "\nProcesos leídos del Archivo CSV", "bold blue")
+    # Mostrar la tabla (tu código original)
+    tabla_todos = crear_tabla_procesos_df(df_procesos, f"\nProcesos leídos de: {archivo_seleccionado}", "bold blue")
     console.print(tabla_todos)
+    
     pausar_y_limpiar("Presiona Enter para Filtrar los Procesos...")
     
     return df_procesos
@@ -72,9 +108,22 @@ def filtrarProcesos(df_procesos):
     df_validado.loc[mask_decimales & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = f'Tiempo de {col} es decimal'
     df_validado.loc[mask_muy_grande & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = f'Excede el límite de tiempo permitido de {MAX_VALOR_PERMITIDO}'
 
-    # 3. FILTRO: No existen tiempos o tamaños negativos
-    mask_no_positivo = (df_validado['Tamaño'] <= 0) | (df_validado['Irrupcion'] <= 0) | (df_validado['Arribo'] < 0)
-    df_validado.loc[mask_no_positivo & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'Valor negativo'
+    # 3. FILTRO: Validación de rangos (Negativos vs Ceros)
+    
+    # A) TRATAMOS VALORES NEGATIVOS
+    # Verificamos si algún campo es estrictamente menor a 0.
+    mask_negativos = (df_validado['Tamaño'] < 0) | \
+                     (df_validado['Irrupcion'] < 0) | \
+                     (df_validado['Arribo'] < 0)
+    
+    # Si encontramos negativos, ponemos la razón específica
+    df_validado.loc[mask_negativos & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'Valor negativo'
+
+    # B) TRATAMOS VALORES IGUAL A CERO
+    # Tenemos en cuenta que el tiempo de Arribo en 0 SÍ es válido .
+    # Por eso solo marcamos error si Tamaño o Irrupción son 0.
+    mask_ceros = (df_validado['Tamaño'] == 0) | (df_validado['Irrupcion'] == 0)
+    df_validado.loc[mask_ceros & (df_validado['Rechazo_Razon'] == ''), 'Rechazo_Razon'] = 'El valor es cero'
 
     # 4. FILTRO: Límites Físicos y Lógicos
     mask_memoria = df_validado['Tamaño'] > MAX_MEMORIA
