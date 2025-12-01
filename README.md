@@ -37,7 +37,7 @@ Desarrollado en Python utilizando pandas para la gestión de datos y rich para l
 	- Descomprimir la carpeta del proyecto.
 	- Ingresar a la carpeta Programa.
 	- Ejecutar el archivo Simulador_Spartans.exe.
-	- El sistema cargará automáticamente el archivo procesos.csv ubicado en la carpeta ArchivosEjemplo.
+	- El sistema permitirá elegir la evaluación a elección de uno de los archivos ubicados en la carpeta ArchivosEjemplo.
 
 Nota: No mueva el ejecutable de su carpeta, ya que necesita los archivos adjuntos para funcionar.
 
